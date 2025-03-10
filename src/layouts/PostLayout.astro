@@ -7,6 +7,7 @@ import Tags from "../components/Tags.astro";
 import TableOfContents from "../components/TableOfContents.astro";
 import LatestPosts from "../components/LatestPosts.astro";
 import Newsletter from "../components/Newsletter.svelte";
+import SocialLinks from "../components/SocialLinks.svelte";
 
 const { frontmatter } = Astro.props;
 
@@ -102,6 +103,9 @@ const authorData = Astro.props.authorData || {
   {dateStr}
 </time>
                     </p>
+                    <div class="mt-2">
+                      <SocialLinks size="sm" color="gray" client:load />
+                    </div>
                   </div>
                 ) : (
                   <div>

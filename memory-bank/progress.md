@@ -11,7 +11,7 @@
 - **Initial Setup**: The project's initial setup and configuration have been documented including the technologies used development setup and technical constraints.
 
 - **Project Update**: The project has been successfully updated to the latest version of Astro and compatible dependencies:
-  - Updated Astro to the latest version (`^5.3.0`).
+  - Updated Astro to the latest version (`~5.4.2`).
   - Updated Flowbite to the latest version (`^0.47.4`).
   - Updated Svelte to the latest version (`^5.20.1`).
   - Updated Tailwind CSS to the latest version (`^3.4.3`).
@@ -32,6 +32,9 @@
   - Testimonials database for client feedback
   - Work Experience database for professional history
   - About page content database for personal information
+  - Social Links database for managing social media links
+  - Home Hero database for customizing the homepage hero section
+  - Site Settings database for managing global site settings (title, logo, favicon, meta tags, etc.)
 
 - **Configuration Files**: Created configuration files for various components of the website:
   - `src/config/about.ts` for about page content
@@ -47,6 +50,14 @@
   - Created a resume timeline view and integrated it into the about page
   - Enhanced the contact form to send emails via SMTP
   - Fixed the publish_date error in the LatestPosts component
+  - Created reusable components that use Notion data with config fallbacks:
+    - SocialLinks component for displaying social media links
+    - Enhanced FeatureHero component to use Home Hero database
+    - Updated Layout component to use Site Settings database
+  - Integrated dynamic content in multiple places:
+    - Social links in author bio, about page, and footer
+    - Home hero section with customizable title, subtitle, description, image, and CTAs
+    - Global site settings for title, logo, favicon, meta tags, and SEO
 
 - **Optional Notion Integration**: Made Notion integration optional by using config files as fallbacks, allowing users to choose whether to use Notion for content management.
 

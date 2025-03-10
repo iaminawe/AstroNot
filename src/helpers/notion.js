@@ -27,6 +27,171 @@ const n2m = new NotionToMarkdown({ notionClient: notion });
 const THROTTLE_DURATION = 334; // ms - Notion API has a rate limit of 3 requests per second
 
 /**
+ * Fetch site settings from Notion database
+ * @returns {Promise<Object>} Site settings object
+ */
+export async function fetchSiteSettings() {
+  if (!notion) {
+    console.warn("Notion client not initialized. Cannot fetch site settings.");
+    return null;
+  }
+  
+  const siteSettingsDbId = import.meta.env.VITE_SITE_SETTINGS_DB_ID;
+  if (!siteSettingsDbId) {
+    console.warn("VITE_SITE_SETTINGS_DB_ID not found in .env file");
+    return null;
+  }
+
+  try {
+    const { results } = await notion.databases.query({
+      database_id: siteSettingsDbId,
+      filter: {
+        property: "active",
+        checkbox: {
+          equals: true
+        }
+      },
+      sorts: [
+        {
+          property: "updatedAt",
+          direction: "descending"
+        }
+      ],
+      page_size: 1
+    });
+
+    if (results.length === 0) {
+      console.warn("No active site settings found in Notion database");
+      return null;
+    }
+
+    const settingsPage = results[0];
+    
+    return {
+      title: settingsPage.properties.title?.title[0]?.plain_text || "",
+      logo: settingsPage.properties.logo?.files[0]?.file?.url || settingsPage.properties.logo?.files[0]?.external?.url || "",
+      favicon: settingsPage.properties.favicon?.files[0]?.file?.url || settingsPage.properties.favicon?.files[0]?.external?.url || "",
+      description: settingsPage.properties.description?.rich_text[0]?.plain_text || "",
+      metaTags: settingsPage.properties.metaTags?.rich_text[0]?.plain_text || "",
+      metaKeywords: settingsPage.properties.metaKeywords?.rich_text[0]?.plain_text || ""
+    };
+  } catch (error) {
+    console.error("Error fetching site settings from Notion:", error);
+    return null;
+  }
+}
+
+/**
+ * Fetch home hero content from Notion database
+ * @returns {Promise<Object>} Home hero content object
+ */
+export async function fetchHomeHero() {
+  if (!notion) {
+    console.warn("Notion client not initialized. Cannot fetch home hero content.");
+    return null;
+  }
+  
+  const homeHeroDbId = import.meta.env.VITE_HOME_HERO_DB_ID;
+  if (!homeHeroDbId) {
+    console.warn("VITE_HOME_HERO_DB_ID not found in .env file");
+    return null;
+  }
+
+  try {
+    const { results } = await notion.databases.query({
+      database_id: homeHeroDbId,
+      filter: {
+        property: "active",
+        checkbox: {
+          equals: true
+        }
+      },
+      sorts: [
+        {
+          property: "updatedAt",
+          direction: "descending"
+        }
+      ],
+      page_size: 1
+    });
+
+    if (results.length === 0) {
+      console.warn("No active home hero content found in Notion database");
+      return null;
+    }
+
+    const heroPage = results[0];
+    
+    return {
+      title: heroPage.properties.title?.title[0]?.plain_text || "",
+      subtitle: heroPage.properties.subtitle?.rich_text[0]?.plain_text || "",
+      description: heroPage.properties.introParagraph?.rich_text[0]?.plain_text || "",
+      ctaButton: {
+        text: heroPage.properties.ctaTitle?.rich_text[0]?.plain_text || "Learn More",
+        url: heroPage.properties.ctaLink?.url || "#",
+        target: "_blank"
+      },
+      secondaryCtaButton: {
+        text: heroPage.properties.secondaryCtaTitle?.rich_text[0]?.plain_text || "",
+        url: heroPage.properties.secondaryCtaLink?.url || "#",
+        target: "_blank"
+      },
+      profileImage: {
+        src: heroPage.properties.imageUrl?.url || heroPage.properties.imageUrl?.rich_text[0]?.plain_text || "",
+        alt: heroPage.properties.imageAlt?.rich_text[0]?.plain_text || "Hero Image"
+      }
+    };
+  } catch (error) {
+    console.error("Error fetching home hero content from Notion:", error);
+    return null;
+  }
+}
+
+/**
+ * Fetch social links from Notion database
+ * @returns {Promise<Array>} Array of social link objects
+ */
+export async function fetchSocialLinks() {
+  if (!notion) {
+    console.warn("Notion client not initialized. Cannot fetch social links.");
+    return [];
+  }
+  
+  const socialLinksDbId = import.meta.env.VITE_SOCIAL_LINKS_DB_ID;
+  if (!socialLinksDbId) {
+    console.warn("VITE_SOCIAL_LINKS_DB_ID not found in .env file");
+    return [];
+  }
+
+  try {
+    const { results } = await notion.databases.query({
+      database_id: socialLinksDbId,
+      sorts: [
+        {
+          property: "order",
+          direction: "ascending"
+        }
+      ]
+    });
+
+    const socialLinks = results.map(link => ({
+      id: link.id,
+      name: link.properties.name?.title[0]?.plain_text || "Untitled Link",
+      url: link.properties.url?.url || "#",
+      icon: link.properties.icon?.rich_text[0]?.plain_text || "",
+      iconType: link.properties.iconType?.select?.name || "custom", // 'custom' or 'component'
+      order: link.properties.order?.number || 0,
+      active: link.properties.active?.checkbox || true
+    }));
+
+    return socialLinks.filter(link => link.active).sort((a, b) => a.order - b.order);
+  } catch (error) {
+    console.error("Error fetching social links from Notion:", error);
+    return [];
+  }
+}
+
+/**
  * Fetch projects from Notion database
  * @returns {Promise<Array>} Array of project objects
  */
@@ -317,16 +482,23 @@ export async function fetchAboutContent() {
       }
     }
     
-    // Extract social links
-    const socialLinks = [];
-    const socialLinksProperty = aboutPage.properties.socialLinks?.rich_text[0]?.plain_text || "[]";
+    // Fetch social links from dedicated database if available
+    let socialLinks = [];
     try {
-      const parsedLinks = JSON.parse(socialLinksProperty);
-      if (Array.isArray(parsedLinks)) {
-        socialLinks.push(...parsedLinks);
-      }
+      socialLinks = await fetchSocialLinks();
     } catch (e) {
-      console.warn("Error parsing social links:", e);
+      console.warn("Error fetching social links from database:", e);
+      
+      // Fallback to parsing from the about page property
+      const socialLinksProperty = aboutPage.properties.socialLinks?.rich_text[0]?.plain_text || "[]";
+      try {
+        const parsedLinks = JSON.parse(socialLinksProperty);
+        if (Array.isArray(parsedLinks)) {
+          socialLinks = parsedLinks;
+        }
+      } catch (e) {
+        console.warn("Error parsing social links from about page:", e);
+      }
     }
     
     return {

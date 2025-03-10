@@ -5,6 +5,7 @@ import { Badge } from "flowbite-svelte";
 import { fetchAboutContent, fetchWorkExperience } from "../helpers/notion.js";
 import { aboutContent as configAboutContent } from "../config/about";
 import { resumeData } from "../config/resume";
+import SocialLinks from "../components/SocialLinks.svelte";
 
 // Check if we should fetch from Notion
 const shouldFetchAboutFromNotion = import.meta.env.VITE_ABOUT_DB_ID && 
@@ -113,29 +114,17 @@ const skills = resumeData.skills || [
               ))}
             </div>
           </div><div class="lg:pl-20">
-            <ul role="list">
-              {aboutContent.socialLinks.map((link, index) => (
-                <li class={index > 0 ? "mt-4 flex" : "flex"}>
-                  <a
-                    class="group flex text-sm font-medium text-zinc-800 transition hover:text-teal-500 dark:text-zinc-200 dark:hover:text-teal-500"
-                    href={link.url}
-                  >
-                    <svg
-                      viewBox="0 0 24 24"
-                      aria-hidden="true"
-                      class="h-6 w-6 flex-none fill-zinc-500 transition group-hover:fill-teal-500"
-                    >
-                      <path
-                        d={link.icon}
-                      ></path>
-                    </svg>
-                    <span class="ml-4">{link.name}</span>
-                  </a>
-                </li>
-              ))}
-              <li
-                class="mt-8 flex border-t border-zinc-100 pt-8 dark:border-zinc-700/40"
-              >
+            <div class="mb-6">
+              <SocialLinks 
+                size="md" 
+                color="default" 
+                showLabels={true} 
+                horizontal={false} 
+                className="space-y-4" 
+                client:load 
+              />
+            </div>
+            <div class="border-t border-zinc-100 pt-8 dark:border-zinc-700/40">
                 <a
                   class="group flex text-sm font-medium text-zinc-800 transition hover:text-teal-500 dark:text-zinc-200 dark:hover:text-teal-500"
                   href={`mailto:${aboutContent.email.address}`}
@@ -152,8 +141,7 @@ const skills = resumeData.skills || [
                   </svg>
                   <span class="ml-4">{aboutContent.email.label}</span>
                 </a>
-              </li>
-            </ul>
+            </div>
           </div>
         </div>
       </div>

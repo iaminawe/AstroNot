@@ -1,7 +1,33 @@
 <script>
+  import { onMount } from 'svelte';
   import { Button } from "flowbite-svelte";
   import { ArrowRightOutline } from "flowbite-svelte-icons";
-  import { heroContent } from "../../config/hero";
+  import { heroContent as configHeroContent } from "../../config/hero";
+  import { fetchHomeHero } from "../../helpers/notion.js";
+  
+  // Use config hero content as initial value
+  let heroContent = configHeroContent;
+  
+  // Fetch hero content from Notion if available
+  onMount(async () => {
+    try {
+      // Check if we should fetch from Notion
+      const homeHeroDbId = import.meta.env.VITE_HOME_HERO_DB_ID;
+      const shouldFetchFromNotion = homeHeroDbId && 
+                                   homeHeroDbId !== 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX';
+      
+      if (shouldFetchFromNotion) {
+        const notionHeroContent = await fetchHomeHero();
+        if (notionHeroContent) {
+          heroContent = notionHeroContent;
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching hero content from Notion:", error);
+      // Fallback to config hero content
+      heroContent = configHeroContent;
+    }
+  });
 </script>
 
 <section class="relative py-6 sm:py-10">
@@ -37,6 +63,21 @@
             <ArrowRightOutline size="md" class="-mr-1 ml-2" />
           </Button>
         </a>
+        
+        {#if heroContent.secondaryCtaButton && heroContent.secondaryCtaButton.text}
+          <a
+            href={heroContent.secondaryCtaButton.url}
+            target={heroContent.secondaryCtaButton.target}
+          >
+            <Button
+              size="xl"
+              color="alternative"
+              class="inline-flex items-center justify-center"
+            >
+              {heroContent.secondaryCtaButton.text}
+            </Button>
+          </a>
+        {/if}
       </div>
     </div>
 

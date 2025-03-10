@@ -35,7 +35,32 @@ VITE_ABOUT_DB_ID='your_about_database_id_here'
 
 ## Setting Up Notion Databases
 
-### 1. Projects Database
+### 1. Social Links Database
+
+This database is used to manage social media links that will be displayed on the author bio, about page, and footer.
+
+1. Create a new database in Notion
+2. Add the following properties:
+   - `name` (Title): The name of the social media platform (e.g., "Twitter", "GitHub")
+   - `url` (URL): The URL to your social media profile
+   - `icon` (Text): The SVG path for the icon or the name of the Flowbite icon component
+   - `iconType` (Select): The type of icon - "custom" for SVG paths or "component" for Flowbite components
+   - `order` (Number): The order in which the link should appear
+   - `active` (Checkbox): Whether the link should be displayed
+
+3. Share the database with your integration:
+   - Click "Share" in the top right corner of the database
+   - Click "Invite" and search for your integration name
+   - Click "Invite"
+
+4. Copy the database ID from the URL:
+   - The database ID is the part of the URL after the last `/` and before the `?`
+   - Example: `https://www.notion.so/myworkspace/1234567890abcdef1234567890abcdef?v=...`
+   - In this example, the database ID is `1234567890abcdef1234567890abcdef`
+
+5. Add the database ID to your `.env` file as `VITE_SOCIAL_LINKS_DB_ID`
+
+### 2. Projects Database
 
 This database is used to showcase your work on the projects page.
 
@@ -115,7 +140,46 @@ This database is used to display your work experience on the about page.
 4. Share the database with your integration
 5. Copy the database ID and add it to your `.env` file as `VITE_WORK_EXPERIENCE_DB_ID`
 
-### 5. About Page Content Database
+### 6. Site Settings Database
+
+This database is used to manage the global site settings.
+
+1. Create a new database in Notion
+2. Add the following properties:
+   - `title` (Title): The site title (used in the browser tab and SEO)
+   - `logo` (Files & Media): The site logo image
+   - `favicon` (Files & Media): The site favicon
+   - `description` (Text): The site description (used for SEO)
+   - `metaTags` (Text): Additional HTML meta tags to include in the head section
+   - `metaKeywords` (Text): Keywords for SEO (comma-separated)
+   - `active` (Checkbox): Whether these settings are active
+   - `updatedAt` (Date): The date when the settings were last updated
+
+3. Share the database with your integration
+4. Copy the database ID and add it to your `.env` file as `VITE_SITE_SETTINGS_DB_ID`
+
+### 7. Home Hero Database
+
+This database is used to manage the content of the home page hero section.
+
+1. Create a new database in Notion
+2. Add the following properties:
+   - `title` (Title): The main title for the hero section
+   - `subtitle` (Text): The subtitle for the hero section
+   - `introParagraph` (Text): The introductory paragraph
+   - `imageUrl` (URL): The URL to the hero image
+   - `imageAlt` (Text): The alt text for the hero image
+   - `ctaTitle` (Text): The text for the primary call-to-action button
+   - `ctaLink` (URL): The URL for the primary call-to-action button
+   - `secondaryCtaTitle` (Text): The text for the secondary call-to-action button (optional)
+   - `secondaryCtaLink` (URL): The URL for the secondary call-to-action button (optional)
+   - `active` (Checkbox): Whether this hero content is active
+   - `updatedAt` (Date): The date when the content was last updated
+
+3. Share the database with your integration
+4. Copy the database ID and add it to your `.env` file as `VITE_HOME_HERO_DB_ID`
+
+### 7. About Page Content Database
 
 This database is used to manage the content of the about page.
 

@@ -4,7 +4,7 @@
 The current focus is on enhancing the project with additional Notion integration capabilities and improving the overall user experience. This includes updating the Memory Bank to reflect the changes and ensuring that all components work together seamlessly.
 
 ## Recent Changes
-- Updated Astro to the latest version (`^5.3.0`).
+- Updated Astro to the latest version (`~5.4.2`).
 - Updated Flowbite to the latest version (`^0.47.4`).
 - Updated Svelte to the latest version (`^5.20.1`).
 - Updated Tailwind CSS to the latest version (`^3.4.3`).
@@ -24,6 +24,9 @@ The current focus is on enhancing the project with additional Notion integration
   - Testimonials database for client feedback
   - Work Experience database for professional history
   - About page content database for personal information
+  - Social Links database for managing social media links
+  - Home Hero database for customizing the homepage hero section
+  - Site Settings database for managing global site settings (title, logo, favicon, meta tags, etc.)
 - Created configuration files for various components of the website:
   - `src/config/about.ts` for about page content
   - `src/config/contact.ts` for contact form
@@ -37,6 +40,14 @@ The current focus is on enhancing the project with additional Notion integration
 - Fixed the publish_date error in the LatestPosts component
 - Created a resume timeline view and integrated it into the about page
 - Made Notion integration optional by using config files as fallbacks
+- Created reusable components that use Notion data with config fallbacks:
+  - SocialLinks component for displaying social media links
+  - Enhanced FeatureHero component to use Home Hero database
+  - Updated Layout component to use Site Settings database
+- Integrated dynamic content in multiple places:
+  - Social links in author bio, about page, and footer
+  - Home hero section with customizable title, subtitle, description, image, and CTAs
+  - Global site settings for title, logo, favicon, meta tags, and SEO
 
 ## Next Steps
 - Create detailed documentation for setting up Notion databases for enhanced integration

@@ -2,13 +2,38 @@
 import { ViewTransitions } from "astro:transitions";
 import Navbar from "./_Navbar.svelte";
 import Footer from "./_Footer.svelte";
-import { layoutStore } from "../stores/layout";
+import { navbar } from "../stores/layout";
 import { getImage } from "astro:assets";
 import { postImageImport } from "../helpers/images.mjs";
+import { siteSettings as configSiteSettings } from "../config/site";
+import { fetchSiteSettings } from "../helpers/notion.js";
 
-const { title, description, cover } = Astro.props;
-let layout = layoutStore;
+const { title: propTitle, description: propDescription, cover } = Astro.props;
 let optimizedCoverImage: any = null;
+
+// Fetch site settings from Notion if available
+let siteSettings = configSiteSettings;
+const siteSettingsDbId = import.meta.env.VITE_SITE_SETTINGS_DB_ID;
+const shouldFetchFromNotion = siteSettingsDbId && 
+                             siteSettingsDbId !== 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX';
+
+if (shouldFetchFromNotion) {
+  try {
+    const notionSiteSettings = await fetchSiteSettings();
+    if (notionSiteSettings) {
+      siteSettings = notionSiteSettings;
+    }
+  } catch (error) {
+    console.error("Error fetching site settings from Notion:", error);
+  }
+}
+
+// Use prop values if provided, otherwise use site settings
+const title = propTitle || siteSettings.title;
+const description = propDescription || siteSettings.description;
+const favicon = siteSettings.favicon || "/favicon.ico";
+const metaTags = siteSettings.metaTags || "";
+const metaKeywords = siteSettings.metaKeywords || "";
 
 if (cover) {
   const { default: dynamicImg } = await postImageImport(cover);
@@ -21,14 +46,16 @@ if (cover) {
     <title>{title}</title>
 
     <meta charset="UTF-8" />
-    <meta
-      name="description"
-      content="Transforming ideas into powerful, scalable digital solutions by blending creativity with technical expertise. "
-    />
+    <meta name="description" content={description} />
     <meta name="viewport" content="width=device-width" />
     <meta name="generator" content={Astro.generator} />
+    {metaKeywords && <meta name="keywords" content={metaKeywords} />}
+    
+    <!-- Additional meta tags from Notion -->
+    {metaTags && <Fragment set:html={metaTags} />}
+    
     <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
-    <link rel="icon" type="image/x-icon" sizes="any" href="/favicon.ico" />
+    <link rel="icon" type="image/x-icon" sizes="any" href={favicon} />
 
     <style is:global>
       /* Code Block Styling Overrides */

@@ -28,7 +28,7 @@ Space requires **FAST** speeds, so AstroNot is built for performance with the **
 
 - **Flowbite**: Flowbite is a UI Framework which is built on top of Tailwind CSS. It's a collection of design elements, components, and layouts, helping to build pixel-perfect responsive websites and apps faster and easier. Flowbite can be used with all of the popular frameworks (React, Svelte, Vue, etc), or with no framework at all.
 
-- **Astro**: Astro builds fast content sites, powerful web applications, dynamic server APIs, and everything in-between; pages are pre-rendered on the server so adding extra frameworks and large libraries will only slow users if hydrated to client for interactivity (using `client:load`, etc). AstroNot is built on Astro v5, which offers a host of new powerful features including enhanced `View Transitions` and improved `Image Optimization`.
+- **Astro**: Astro builds fast content sites, powerful web applications, dynamic server APIs, and everything in-between; pages are pre-rendered on the server so adding extra frameworks and large libraries will only slow users if hydrated to client for interactivity (using `client:load`, etc). AstroNot is built on Astro v5.4, which offers a host of new powerful features including enhanced `View Transitions` and improved `Image Optimization`.
 
 - **Svelte**: Svelte describes itself as "cybernetically enhanced web apps". Svelte is not just a front-end UI framework, but also a compiler - which means that deployed web applications can remain lightweight and fast, without large Javascript bundle sizes required of other frameworks such as React. Svelte pairs perfectly with Astro and `nanostores`.
 
@@ -61,6 +61,9 @@ AstroNot includes `pnpm` out of the box, and supports `bun`! Feel free to replac
   - Testimonials database for client feedback
   - Work Experience database for your professional history
   - About page content database for your personal information
+  - Social Links database for managing social media links across the site
+  - Home Hero database for customizing the homepage hero section
+  - Site Settings database for managing global site settings (title, logo, favicon, meta tags, etc.)
 
 ## ⚙️ Notion Setup
 

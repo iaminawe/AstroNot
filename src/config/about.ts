@@ -26,7 +26,7 @@ export const aboutContent: AboutContent = {
     "I'm currently exploring AI's transformative potential in education government and business helping organizations strategize and implement agent platforms tailored to their unique needs. Outside of work I enjoy snowboarding hiking cold plunging and spending time with my family and our black Labrador Juno."
   ],
   profileImage: {
-    src: "https://avatar.iran.liara.run/public/boy",
+    src: "/images/portrait.webp",
     alt: "Gregg Coppen"
   },
   socialLinks: [

@@ -5,15 +5,10 @@
     FooterLinkGroup,
     FooterLink,
     FooterBrand,
-    FooterIcon,
+    FooterIcon
   } from "flowbite-svelte";
-  import {
-    FacebookSolid,
-    GithubSolid,
-    DiscordSolid,
-    TwitterSolid,
-  } from "flowbite-svelte-icons";
   import { navbar } from "../stores/layout";
+  import SocialLinks from "../components/SocialLinks.svelte";
 
   $: transluscent = $navbar.transluscent;
   $: footerClass = `text-white navbar bg-primary-50 ${
@@ -60,39 +55,8 @@
           /> -->
         </div>
 
-        <div class="mt-4 flex items-center justify-center space-x-6 sm:mt-0">
-          <FooterIcon
-            href="https://github.com/jsonMartin/AstroNot"
-            target="_blank"
-          >
-            <FacebookSolid
-              class="h-4 w-4 text-gray-100 hover:scale-125 dark:text-gray-100 dark:hover:text-white"
-            />
-          </FooterIcon>
-          <FooterIcon
-            href="https://github.com/jsonMartin/AstroNot"
-            target="_blank"
-          >
-            <DiscordSolid
-              class="h-4 w-4 text-gray-100 hover:scale-125 dark:text-gray-100 dark:hover:text-white"
-            />
-          </FooterIcon>
-          <FooterIcon
-            href="https://github.com/jsonMartin/AstroNot"
-            target="_blank"
-          >
-            <TwitterSolid
-              class="h-4 w-4 text-gray-100 hover:scale-125 dark:text-gray-100 dark:hover:text-white"
-            />
-          </FooterIcon>
-          <FooterIcon
-            href="https://github.com/jsonMartin/AstroNot"
-            target="_blank"
-          >
-            <GithubSolid
-              class="h-4 w-4 text-gray-100 hover:scale-125 dark:text-gray-100 dark:hover:text-white"
-            />
-          </FooterIcon>
+        <div class="mt-4 flex items-center justify-center sm:mt-0">
+          <SocialLinks size="sm" color="white" />
         </div>
       </div>
     </Footer>
