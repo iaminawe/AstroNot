@@ -235,7 +235,7 @@ async function syncAuthor() {
   try {
     const { results } = await notion.databases.query({
       database_id: AUTHOR_DB_ID,
-      filter: { property: "Active", checkbox: { equals: true } }
+      filter: { property: "active", checkbox: { equals: true } }
     });
     
     if (results.length === 0) {
@@ -247,11 +247,26 @@ async function syncAuthor() {
       }];
     }
     
-    return results.map(author => ({
-      name: author.properties.Name.title[0].plain_text,
-      bio: author.properties.Bio.rich_text[0].plain_text,
-      avatar: author.properties.Avatar.files[0].file.url
-    }));
+    // Log the author properties to see what's available
+    console.log("Author properties:", JSON.stringify(results[0].properties, null, 2));
+    
+    // Try to access the properties safely
+    return results.map(author => {
+      const name = author.properties.name?.title?.[0]?.plain_text || 
+                  author.properties.Name?.title?.[0]?.plain_text || 
+                  author.properties.title?.title?.[0]?.plain_text || 
+                  "Gregg Coppen";
+      
+      const bio = author.properties.bio?.rich_text?.[0]?.plain_text || 
+                 author.properties.Bio?.rich_text?.[0]?.plain_text || 
+                 "Human in the Loop, Designer, Developer, AI Consultant";
+      
+      const avatar = author.properties.avatar?.files?.[0]?.file?.url || 
+                    author.properties.Avatar?.files?.[0]?.file?.url || 
+                    "/images/portrait.webp";
+      
+      return { name, bio, avatar };
+    });
   } catch (error) {
     console.error("Error fetching author data from Notion:", error);
     console.warn("Using default author data as fallback.");
