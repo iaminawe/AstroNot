@@ -2,22 +2,21 @@
 import { getImage } from "astro:assets";
 import Layout from "../layouts/Layout.astro";
 import Tags from "../components/Tags.astro";
-import { postImageImport } from "../helpers/images.mjs";
-import { Alert } from "flowbite-svelte";
-import { PenSolid } from "flowbite-svelte-icons";
 import { fetchProjects } from "../helpers/notion.js";
+import { authorData as configAuthorData } from "../config/author";
+import { fetchAuthor } from "../helpers/notion.js";
 
-const POSTS_PATH = "posts";
+const PROJECTS_PATH = "projects";
 const COVER_IMG_ASPECT_RATIO = "13/9"; // TODO: Expose as variable
 
 // Check if we should fetch from Notion
-const shouldFetchFromNotion = import.meta.env.VITE_PROJECTS_DB_ID && 
+const shouldFetchFromNotion = import.meta.env.VITE_PROJECTS_DB_ID &&
                              import.meta.env.VITE_PROJECTS_DB_ID !== 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX';
 
 // Initialize projects array
 let projects = [];
 
-// Fetch projects from Notion if database ID is provided, otherwise use empty array
+// Fetch projects from Notion if database ID is provided otherwise use empty array
 if (shouldFetchFromNotion) {
   try {
     const notionProjects = await fetchProjects();
@@ -29,15 +28,27 @@ if (shouldFetchFromNotion) {
   }
 }
 
-// Also load posts with "Article" tag for backward compatibility
-const posts = await Astro.glob("./posts/*.mdx");
-const articlePosts = posts.filter(post =>
-  post?.frontmatter?.tags?.some(tag => tag.name === "Article")
-);
+// Fetch author data from Notion if available
+let authorData = configAuthorData;
+const authorDbId = import.meta.env.VITE_AUTHOR_DB_ID;
+const shouldFetchAuthorFromNotion = authorDbId &&
+                             authorDbId !== 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX';
 
-// Combine projects from Notion with article posts
-// In the future, all projects should come from Notion
-
+if (shouldFetchAuthorFromNotion) {
+  try {
+    const notionAuthorData = await fetchAuthor();
+    if (notionAuthorData) {
+      authorData = notionAuthorData;
+    } else {
+      console.info("No author data found in Notion using config fallback");
+    }
+  } catch (error) {
+    console.error("Error fetching author data from Notion:", error);
+    console.info("Using author data from config file as fallback");
+  }
+} else {
+  console.info("No VITE_AUTHOR_DB_ID provided using author data from config file");
+}
 ---
 
 <Layout title="Projects">
@@ -55,15 +66,16 @@ const articlePosts = posts.filter(post =>
           >
             Websites, AI Agents, Design & Animation
           </h2>
+          <p class="mt-4 text-base text-gray-500 dark:text-gray-400 sm:text-lg">
+            Explore my latest projects and see what I've been working on. From web applications to AI agents, I'm always building something new.
+          </p>
         </div>
-
-        <!-- {showTagsFilter && <TagsFilter tagsList={tagsList} client:load />} -->
 
         <div
           class="mt-8 grid items-center gap-8 md:grid-cols-2 lg:mt-16 xl:grid-cols-3"
         >
           {/* Notion Projects */}
-          {projects.map(async (project) => {
+          {projects.map((project) => {
             let coverImageSrc = "";
             let preloadCoverImageSrc = "";
             let preloadCoverImageMobileSrc = "";
@@ -81,8 +93,7 @@ const articlePosts = posts.filter(post =>
 
             return (
               <a
-                href={project.url || "#"}
-                target={project.url ? "_blank" : "_self"}
+                href={`/${PROJECTS_PATH}/${project.slug}`}
                 class="post-link-container contents"
               >
                 <article class="h-fit transform rounded-lg border border-gray-200 bg-white shadow-md transition duration-100 ease-in dark:border-gray-700 dark:bg-gray-800 sm:hover:scale-[102%] lg:hover:scale-105">
@@ -119,168 +130,13 @@ const articlePosts = posts.filter(post =>
                     <div class="flex items-center space-x-3">
                       <img
                         class="h-11 w-11 rounded-full"
-                        src="/images/portrait.webp"
-                        alt="Gregg's Avatar"
+                        src={authorData.avatar}
+                        alt={authorData.name}
                       />
                       <div class="font-medium dark:text-white">
-                        <div>Gregg Coppen</div>
+                        <div>{authorData.name}</div>
                         <div class="text-sm font-normal text-gray-500 dark:text-gray-400">
                           <span>Project</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </article>
-              </a>
-            );
-          })}
-
-          {/* Article Posts (for backward compatibility) */}
-          {articlePosts.map(async (post) => {
-            const { cover, title } = post?.frontmatter;
-            const dateStr = post.frontmatter.publish_date 
-              ? new Date(post.frontmatter.publish_date).toLocaleString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                  year: "numeric",
-                })
-              : "";
-
-            let optimizedCoverImage: any = null;
-            let coverImageSrc: string = "";
-            let preloadCoverImageSrc: string = "";
-            let preloadCoverImageMobileSrc: string = "";
-
-            if (cover) {
-              try {
-                const imageFilePath = (await postImageImport(cover)).default;
-
-                optimizedCoverImage = await getImage({
-                  src: imageFilePath,
-                  width: 1400,
-                });
-
-                coverImageSrc = (
-                  await getImage({
-                    src: imageFilePath,
-                    width: 1400,
-                  })
-                ).src;
-
-                preloadCoverImageSrc = (
-                  await getImage({
-                    src: imageFilePath,
-                    width: 1920,
-                    height: 1080,
-                  })
-                ).src;
-
-                preloadCoverImageMobileSrc = (
-                  await getImage({
-                    src: imageFilePath,
-                    width: 720,
-                    height: 480,
-                  })
-                ).src;
-
-                coverImageSrc = (optimizedCoverImage as any).src;
-              } catch (error) {
-                console.error(`Error processing image for ${title}:`, error);
-              }
-            }
-
-            return (
-              <a
-                href={`/${POSTS_PATH}/${post.frontmatter.slug}`}
-                class={
-                  "post-link-container contents " +
-                  post.frontmatter.tags
-                    .map((tag) => `post-link-tag-${tag.id}`)
-                    .join(" ")
-                }
-              >
-                <article class="h-fit transform rounded-lg border border-gray-200 bg-white shadow-md transition duration-100 ease-in dark:border-gray-700 dark:bg-gray-800 sm:hover:scale-[102%] lg:hover:scale-105">
-                  <div
-                    style={`view-transition-name: cover-image-${post.frontmatter.id};`}
-                  >
-                    {post.frontmatter.status !== "published" && (
-                      <Alert color="yellow">
-                        <PenSolid slot="icon" class="h-4 w-4" />
-                        Edit this <span class="font-extrabold">
-                          draft
-                        </span>{" "}
-                        post in{" "}
-                        <a
-                          href="notion.so"
-                          target="blank"
-                          class="font-semibold"
-                        >
-                          Notion
-                        </a>
-                      </Alert>
-                    )}
-
-                    {cover && coverImageSrc && (
-                      <>
-                        <img
-                          class={`mb-1 h-auto w-full rounded-md rounded-b-none object-cover`}
-                          style={`aspect-ratio: ${COVER_IMG_ASPECT_RATIO}`}
-                          src={coverImageSrc}
-                          alt="cover"
-                        />
-
-                        <link
-                          rel="prefetch"
-                          href={preloadCoverImageSrc}
-                          as="image"
-                        />
-
-                        <link
-                          rel="prefetch"
-                          href={preloadCoverImageMobileSrc}
-                          as="image"
-                        />
-                      </>
-                    )}
-                  </div>
-                  <div
-                    class="p-4"
-                    style={`view-transition-name: cover-title-${post.frontmatter.id};`}
-                  >
-                    <Tags tags={post.frontmatter.tags} />
-
-                    <h2 class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
-                      {post.frontmatter.title}
-                    </h2>
-
-                    <p
-                      class="mb-4 whitespace-pre-line font-light text-gray-500 dark:text-gray-400"
-                      set:html={
-                        post.frontmatter.description !== "undefined"
-                          ? post.frontmatter.description
-                          : ""
-                      }
-                    />
-
-                    {/* Author Section */}
-                    <div class="flex items-center space-x-3">
-                      <img
-                        class="h-11 w-11 rounded-full"
-                        src="/images/portrait.webp"
-                        alt="Gregg's Avatar"
-                      />
-                      <div class="font-medium dark:text-white">
-                        <div>Gregg Coppen</div>
-                        <div class="text-sm font-normal text-gray-500 dark:text-gray-400">
-                          <span
-                            class={
-                              !post.frontmatter.publish_date ? "hidden" : ""
-                            }
-                          >
-                            <span>{dateStr}</span>
-                            <span> · </span>
-                          </span>
-                          <span>{post.frontmatter.reading_time}</span>
                         </div>
                       </div>
                     </div>

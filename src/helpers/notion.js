@@ -7,18 +7,29 @@ import { delay } from './delay.mjs';
 config();
 
 // Check if Notion API key is available
+console.log("=== NOTION INITIALIZATION ===");
 const NOTION_KEY = import.meta.env.VITE_NOTION_KEY;
-if (!NOTION_KEY) {
-  console.warn("Missing Notion API key in .env file. Notion integration will not work.");
-}
+console.log("VITE_NOTION_KEY:", NOTION_KEY ? "Present (length: " + NOTION_KEY.length + ")" : "Missing");
 
 // Initialize Notion client if API key is available
-const notion = NOTION_KEY ? new Client({
-  auth: NOTION_KEY,
-  config: {
-    parseChildPages: false
+let notion = null;
+try {
+  if (NOTION_KEY) {
+    console.log("Initializing Notion client...");
+    notion = new Client({
+      auth: NOTION_KEY,
+      config: {
+        parseChildPages: false
+      }
+    });
+    console.log("Notion client initialized successfully");
+  } else {
+    console.error("Cannot initialize Notion client: Missing API key");
   }
-}) : null;
+} catch (error) {
+  console.error("Error initializing Notion client:", error);
+  notion = null;
+}
 
 // Initialize NotionToMarkdown
 const n2m = new NotionToMarkdown({ notionClient: notion });
@@ -132,18 +143,24 @@ export async function fetchSiteSettings() {
  * @returns {Promise<Object>} Home hero content object
  */
 export async function fetchHomeHero() {
+  console.log("fetchHomeHero called");
+  
   if (!notion) {
     console.warn("Notion client not initialized. Cannot fetch home hero content.");
     return null;
   }
   
   const homeHeroDbId = import.meta.env.VITE_HOME_HERO_DB_ID;
+  console.log("Home Hero DB ID:", homeHeroDbId);
+  
   if (!homeHeroDbId) {
     console.warn("VITE_HOME_HERO_DB_ID not found in .env file");
     return null;
   }
 
   try {
+    console.log("Querying Notion database:", homeHeroDbId);
+    
     const { results } = await notion.databases.query({
       database_id: homeHeroDbId,
       filter: {
@@ -152,14 +169,10 @@ export async function fetchHomeHero() {
           equals: true
         }
       },
-      sorts: [
-        {
-          property: "updatedAt",
-          direction: "descending"
-        }
-      ],
       page_size: 1
     });
+
+    console.log("Query results:", results);
 
     if (results.length === 0) {
       console.warn("No active home hero content found in Notion database");
@@ -167,8 +180,9 @@ export async function fetchHomeHero() {
     }
 
     const heroPage = results[0];
+    console.log("Hero page properties:", heroPage.properties);
     
-    return {
+    const heroContent = {
       title: heroPage.properties.title?.title[0]?.plain_text || "",
       subtitle: heroPage.properties.subtitle?.rich_text[0]?.plain_text || "",
       description: heroPage.properties.introParagraph?.rich_text[0]?.plain_text || "",
@@ -178,8 +192,8 @@ export async function fetchHomeHero() {
         target: "_blank"
       },
       secondaryCtaButton: {
-        text: heroPage.properties.secondaryCtaTitle?.rich_text[0]?.plain_text || "",
-        url: heroPage.properties.secondaryCtaLink?.url || "#",
+        text: heroPage.properties["CTA Secondary Title"]?.rich_text[0]?.plain_text || "",
+        url: heroPage.properties.secondaryCtaLink?.rich_text[0]?.plain_text || "#",
         target: "_blank"
       },
       profileImage: {
@@ -187,6 +201,9 @@ export async function fetchHomeHero() {
         alt: heroPage.properties.imageAlt?.rich_text[0]?.plain_text || "Hero Image"
       }
     };
+    
+    console.log("Hero content:", heroContent);
+    return heroContent;
   } catch (error) {
     console.error("Error fetching home hero content from Notion:", error);
     return null;
@@ -258,16 +275,51 @@ export async function fetchProjects() {
       database_id: projectsDbId,
     });
 
-    const projects = results.map(project => ({
-      id: project.id,
-      title: project.properties.title?.title[0]?.plain_text || "Untitled Project",
-      description: project.properties.description?.rich_text[0]?.plain_text || "",
-      coverImage: project.properties.coverImage?.files[0]?.file?.url || project.properties.coverImage?.files[0]?.external?.url || "",
-      url: project.properties.url?.url || "",
-      tags: project.properties.tags?.multi_select || [],
-      featured: project.properties.featured?.checkbox || false,
-      order: project.properties.order?.number || 0,
-    }));
+    const projects = [];
+    
+    for (const project of results) {
+      const title = project.properties.title?.title[0]?.plain_text || "Untitled Project";
+      // Create a slug from the title
+      const slug = project.properties.slug?.rich_text[0]?.plain_text || 
+                  title.toLowerCase()
+                      .replace(/[^\w\s-]/g, '')
+                      .replace(/\s+/g, '-');
+      
+      // Fetch the page content
+      const mdblocks = await n2m.pageToMarkdown(project.id);
+      const { parent: mdString } = n2m.toMarkdownString(mdblocks);
+      await delay(THROTTLE_DURATION); // Throttle to avoid rate limiting
+      
+      // Get cover image from page cover or coverImage property
+      let coverImage = "";
+      
+      // First check if there's a page cover
+      if (project.cover) {
+        coverImage = project.cover.external?.url || project.cover.file?.url || "";
+      }
+      
+      // If no page cover, check for coverImage property
+      if (!coverImage) {
+        coverImage = project.properties.coverImage?.files[0]?.file?.url || 
+                    project.properties.coverImage?.files[0]?.external?.url || 
+                    "";
+      }
+      
+      projects.push({
+        id: project.id,
+        title,
+        description: project.properties.description?.rich_text[0]?.plain_text || "",
+        coverImage,
+        url: project.properties.url?.url || "",
+        tags: project.properties.tags?.multi_select || [],
+        featured: project.properties.featured?.checkbox || false,
+        order: project.properties.order?.number || 0,
+        slug,
+        content: mdString || "",
+        created_time: project.created_time,
+        last_edited_time: project.last_edited_time,
+      });
+    }
 
     return projects.sort((a, b) => a.order - b.order);
   } catch (error) {
@@ -281,51 +333,138 @@ export async function fetchProjects() {
  * @returns {Promise<Array>} Array of service objects
  */
 export async function fetchServices() {
+  console.log("=== FETCH SERVICES FUNCTION CALLED ===");
+  
+  // Check if Notion client is initialized
   if (!notion) {
-    console.warn("Notion client not initialized. Cannot fetch services.");
+    console.error("ERROR: Notion client not initialized. NOTION_KEY:", NOTION_KEY ? "Present" : "Missing");
     return [];
   }
   
+  // Check if services database ID is provided
   const servicesDbId = import.meta.env.VITE_SERVICES_DB_ID;
+  console.log("Services DB ID:", servicesDbId);
+  
   if (!servicesDbId) {
-    console.warn("VITE_SERVICES_DB_ID not found in .env file");
+    console.error("ERROR: VITE_SERVICES_DB_ID not found in .env file");
     return [];
   }
 
   try {
-    const { results } = await notion.databases.query({
+    console.log("Attempting to query Notion database with ID:", servicesDbId);
+    
+    // Test if the Notion client is working by making a simple request
+    try {
+      console.log("Testing Notion client with a simple request...");
+      const user = await notion.users.me();
+      console.log("Notion client is working. User:", user.name);
+    } catch (testError) {
+      console.error("ERROR: Notion client test failed:", testError);
+      return [];
+    }
+    
+    // Query the services database
+    console.log("Querying Notion database for services...");
+    const response = await notion.databases.query({
       database_id: servicesDbId,
     });
+    
+    console.log("Notion query response:", response);
+    const { results } = response;
+    console.log("Notion query results count:", results.length);
+
+    if (results.length === 0) {
+      console.warn("No services found in Notion database");
+      return [];
+    }
 
     const services = [];
     
     for (const service of results) {
-      const category = service.properties.category?.select?.name || "Uncategorized";
-      const title = service.properties.title?.title[0]?.plain_text || "Untitled Service";
-      const description = service.properties.description?.rich_text[0]?.plain_text || "";
-      const icon = service.properties.icon?.rich_text[0]?.plain_text || "";
-      const url = service.properties.url?.url || "";
-      const order = service.properties.order?.number || 0;
-      
-      // Find if category already exists
-      let categoryObj = services.find(s => s.name === category);
-      
-      if (!categoryObj) {
-        categoryObj = {
-          name: category,
-          icon: service.properties.categoryIcon?.rich_text[0]?.plain_text || "",
-          items: []
-        };
-        services.push(categoryObj);
+      try {
+        console.log("Processing service:", service.id);
+        
+        // Check if the service has the expected properties
+        if (!service.properties) {
+          console.error("ERROR: Service has no properties:", service);
+          continue;
+        }
+        
+        // Extract service properties with detailed logging
+        let category, title, description, icon, url, order;
+        
+        try {
+          category = service.properties.category?.select?.name;
+          console.log("Category:", category);
+        } catch (e) {
+          console.error("ERROR extracting category:", e);
+          category = "Uncategorized";
+        }
+        
+        try {
+          title = service.properties.title?.title[0]?.plain_text;
+          console.log("Title:", title);
+        } catch (e) {
+          console.error("ERROR extracting title:", e);
+          title = "Untitled Service";
+        }
+        
+        try {
+          description = service.properties.description?.rich_text[0]?.plain_text || "";
+          console.log("Description:", description ? "Present" : "Missing");
+        } catch (e) {
+          console.error("ERROR extracting description:", e);
+          description = "";
+        }
+        
+        try {
+          icon = service.properties.icon?.rich_text[0]?.plain_text || "";
+          console.log("Icon:", icon || "Missing");
+        } catch (e) {
+          console.error("ERROR extracting icon:", e);
+          icon = "";
+        }
+        
+        try {
+          url = service.properties.url?.url || "";
+          console.log("URL:", url || "Missing");
+        } catch (e) {
+          console.error("ERROR extracting url:", e);
+          url = "";
+        }
+        
+        try {
+          order = service.properties.order?.number || 0;
+          console.log("Order:", order);
+        } catch (e) {
+          console.error("ERROR extracting order:", e);
+          order = 0;
+        }
+        
+        console.log(`Processing service: ${title} (${category})`);
+        
+        // Find if category already exists
+        let categoryObj = services.find(s => s.name === category);
+        
+        if (!categoryObj) {
+          categoryObj = {
+            name: category,
+            icon: service.properties.categoryIcon?.rich_text[0]?.plain_text || "",
+            items: []
+          };
+          services.push(categoryObj);
+        }
+        
+        categoryObj.items.push({
+          title,
+          description,
+          icon,
+          url,
+          order
+        });
+      } catch (serviceError) {
+        console.error("ERROR processing service:", serviceError);
       }
-      
-      categoryObj.items.push({
-        title,
-        description,
-        icon,
-        url,
-        order
-      });
     }
     
     // Sort items within each category
@@ -333,9 +472,15 @@ export async function fetchServices() {
       category.items.sort((a, b) => a.order - b.order);
     });
     
+    console.log("Final services structure:", services);
+    console.log("Services count:", services.length);
+    console.log("Total service items:", services.reduce((count, category) => count + category.items.length, 0));
+    
     return services;
   } catch (error) {
-    console.error("Error fetching services from Notion:", error);
+    console.error("ERROR fetching services from Notion:", error);
+    console.error("Error details:", error.message);
+    console.error("Error stack:", error.stack);
     return [];
   }
 }
@@ -345,6 +490,8 @@ export async function fetchServices() {
  * @returns {Promise<Array>} Array of testimonial objects
  */
 export async function fetchTestimonials() {
+  console.log("Fetching testimonials from Notion...");
+  
   if (!notion) {
     console.warn("Notion client not initialized. Cannot fetch testimonials.");
     return [];
@@ -357,24 +504,96 @@ export async function fetchTestimonials() {
   }
 
   try {
-    const { results } = await notion.databases.query({
+    console.log("Querying testimonials database:", testimonialsDbId);
+    
+    // Test if the Notion client is working by making a simple request
+    try {
+      console.log("Testing Notion client with a simple request...");
+      const user = await notion.users.me();
+      console.log("Notion client is working for testimonials. User:", user.name);
+    } catch (testError) {
+      console.error("ERROR: Notion client test failed for testimonials:", testError);
+      return [];
+    }
+    
+    const response = await notion.databases.query({
       database_id: testimonialsDbId,
     });
+    
+    console.log("Testimonials query response:", response);
+    const { results } = response;
+    console.log("Testimonials query results count:", results.length);
 
-    const testimonials = results.map(testimonial => ({
-      id: testimonial.id,
-      name: testimonial.properties.name?.title[0]?.plain_text || "Anonymous",
-      title: testimonial.properties.title?.rich_text[0]?.plain_text || "",
-      company: testimonial.properties.company?.rich_text[0]?.plain_text || "",
-      quote: testimonial.properties.quote?.rich_text[0]?.plain_text || "",
-      avatar: testimonial.properties.avatar?.files[0]?.file?.url || testimonial.properties.avatar?.files[0]?.external?.url || "",
-      featured: testimonial.properties.featured?.checkbox || false,
-      order: testimonial.properties.order?.number || 0,
-    }));
+    if (results.length === 0) {
+      console.warn("No testimonials found in Notion database");
+      return [];
+    }
 
+    const testimonials = [];
+    
+    for (const testimonial of results) {
+      try {
+        // Log the raw properties for debugging
+        console.log("Raw testimonial properties:", JSON.stringify(testimonial.properties, null, 2));
+        
+        // In this database, the quote is in the title field, and name is in rich_text
+        // Log the property names we're using
+        console.log(`Available properties: ${Object.keys(testimonial.properties).join(', ')}`);
+        
+        // Get the name from the name rich_text property
+        const name = testimonial.properties.name?.rich_text?.[0]?.plain_text || "Anonymous";
+        console.log(`Extracted name: ${name}`);
+        
+        // Get position/title if available
+        const title = testimonial.properties.position?.rich_text?.[0]?.plain_text || 
+                     testimonial.properties.title?.rich_text?.[0]?.plain_text || 
+                     "";
+        console.log(`Extracted title: ${title}`);
+        
+        // Get company if available
+        const company = testimonial.properties.company?.rich_text?.[0]?.plain_text || 
+                       testimonial.properties.organization?.rich_text?.[0]?.plain_text || 
+                       "";
+        console.log(`Extracted company: ${company}`);
+        
+        // Get the quote from the title property (which is named "quote" in the database)
+        const quote = testimonial.properties.quote?.title?.[0]?.plain_text || "";
+        console.log(`Extracted quote: ${quote}`);
+        
+        // Avatar handling
+        let avatar = "";
+        if (testimonial.properties.avatar?.files?.length > 0) {
+          const avatarFile = testimonial.properties.avatar.files[0];
+          avatar = avatarFile.file?.url || avatarFile.external?.url || "";
+        }
+        console.log(`Extracted avatar: ${avatar ? "Present" : "None"}`);
+        
+        const featured = testimonial.properties.featured?.checkbox || false;
+        const order = testimonial.properties.order?.number || 0;
+        
+        testimonials.push({
+          id: testimonial.id,
+          name,
+          title,
+          company,
+          quote,
+          avatar,
+          featured,
+          order
+        });
+        
+        console.log(`Processed testimonial: ${name} (${company}): "${quote.substring(0, 30)}..."`);
+      } catch (error) {
+        console.error("Error processing testimonial:", error);
+      }
+    }
+
+    console.log("Final testimonials count:", testimonials.length);
     return testimonials.sort((a, b) => a.order - b.order);
   } catch (error) {
     console.error("Error fetching testimonials from Notion:", error);
+    console.error("Error details:", error.message);
+    console.error("Error stack:", error.stack);
     return [];
   }
 }

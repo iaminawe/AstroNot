@@ -1,39 +1,21 @@
 <script>
   import { onMount } from 'svelte';
   import { UserCircleSolid } from "flowbite-svelte-icons";
-  import { fetchTestimonials } from "../helpers/notion.js";
   
-  // Import testimonials from config file as fallback
-  import { testimonials as configTestimonials } from "../config/testimonials";
-  
-  // Use config testimonials as initial value
-  let testimonials = configTestimonials;
-  
-  // Optionally limit the number of testimonials to display
+  // Accept props from parent
+  export let testimonials = [];
+  export let source = "CONFIG";
   export let limit = testimonials.length;
   
   // Reactive variable for displayed testimonials
   $: displayedTestimonials = testimonials.slice(0, limit);
   
-  // Fetch testimonials from Notion only if TESTIMONIALS_DB_ID is provided
-  onMount(async () => {
-    try {
-      // Check if we should fetch from Notion
-      const testimonialsDbId = import.meta.env.VITE_TESTIMONIALS_DB_ID;
-      const shouldFetchFromNotion = testimonialsDbId && 
-                                   testimonialsDbId !== 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX';
-      
-      if (shouldFetchFromNotion) {
-        const notionTestimonials = await fetchTestimonials();
-        if (notionTestimonials && notionTestimonials.length > 0) {
-          testimonials = notionTestimonials;
-        }
-      }
-    } catch (error) {
-      console.error("Error fetching testimonials from Notion:", error);
-      // Fallback to config testimonials
-      testimonials = configTestimonials;
-    }
+  // Log for debugging
+  onMount(() => {
+    console.log("Testimonials component mounted");
+    console.log(`Testimonials source: ${source}`);
+    console.log(`Testimonials count: ${testimonials.length}`);
+    console.log(`Displaying ${displayedTestimonials.length} testimonials`);
   });
 </script>
 

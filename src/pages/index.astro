@@ -8,17 +8,110 @@ import ServicesMatrix from "../components/ServicesMatrix.svelte";
 import LatestPosts from "../components/LatestPosts.astro";
 import CaseStudiesCarouselWrapper from "../components/CaseStudiesCarouselWrapper.astro";
 import Testimonials from "../components/Testimonials.svelte";
+import { fetchServices, fetchHomeHero, fetchTestimonials } from "../helpers/notion.js";
+import { services as configServices } from "../config/services.ts";
+import { heroContent as configHeroContent } from "../config/hero.ts";
+import { testimonials as configTestimonials } from "../config/testimonials.ts";
+
+// Debug environment variables
+console.log("=== DEBUG ENV VARIABLES ===");
+console.log("VITE_NOTION_KEY:", import.meta.env.VITE_NOTION_KEY ? "Present (length: " + import.meta.env.VITE_NOTION_KEY.length + ")" : "Missing");
+console.log("VITE_SERVICES_DB_ID:", import.meta.env.VITE_SERVICES_DB_ID);
+console.log("VITE_HOME_HERO_DB_ID:", import.meta.env.VITE_HOME_HERO_DB_ID);
+console.log("VITE_TESTIMONIALS_DB_ID:", import.meta.env.VITE_TESTIMONIALS_DB_ID);
+console.log("=== END DEBUG ===");
+
+// Fetch services from Notion on the server side
+let services = configServices;
+let servicesSource = "CONFIG";
+
+try {
+  const notionServices = await fetchServices();
+  if (notionServices && notionServices.length > 0) {
+    services = notionServices;
+    servicesSource = "NOTION";
+    console.log("Using services from Notion");
+  } else {
+    console.log("No services found in Notion, using config file");
+  }
+} catch (error) {
+  console.error("Error fetching services from Notion:", error);
+  console.log("Using config services due to error");
+}
+
+console.log(`Services source: ${servicesSource}`);
+
+// Fetch hero content from Notion on the server side
+let heroContent = configHeroContent;
+let heroSource = "CONFIG";
+
+try {
+  // Check if we should fetch from Notion
+  const homeHeroDbId = import.meta.env.VITE_HOME_HERO_DB_ID;
+  const shouldFetchFromNotion = homeHeroDbId && homeHeroDbId !== 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX';
+  
+  if (shouldFetchFromNotion) {
+    console.log("Fetching hero content from Notion...");
+    const notionHeroContent = await fetchHomeHero();
+    
+    if (notionHeroContent) {
+      heroContent = notionHeroContent;
+      heroSource = "NOTION";
+      console.log("Using hero content from Notion");
+    } else {
+      console.log("No hero content found in Notion, using config file");
+    }
+  } else {
+    console.log("Not fetching hero content from Notion, using config");
+  }
+} catch (error) {
+  console.error("Error fetching hero content from Notion:", error);
+  console.log("Using config hero content due to error");
+}
+
+console.log(`Hero source: ${heroSource}`);
+
+// Fetch testimonials from Notion on the server side
+let testimonials = configTestimonials;
+let testimonialsSource = "CONFIG";
+let testimonialsLimit = 6; // Default limit
+
+try {
+  // Check if we should fetch from Notion
+  const testimonialsDbId = import.meta.env.VITE_TESTIMONIALS_DB_ID;
+  const shouldFetchFromNotion = testimonialsDbId && testimonialsDbId !== 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX';
+  
+  if (shouldFetchFromNotion) {
+    console.log("Fetching testimonials from Notion...");
+    const notionTestimonials = await fetchTestimonials();
+    
+    if (notionTestimonials && notionTestimonials.length > 0) {
+      testimonials = notionTestimonials;
+      testimonialsSource = "NOTION";
+      console.log("Using testimonials from Notion");
+    } else {
+      console.log("No testimonials found in Notion, using config file");
+    }
+  } else {
+    console.log("Not fetching testimonials from Notion, using config");
+  }
+} catch (error) {
+  console.error("Error fetching testimonials from Notion:", error);
+  console.log("Using config testimonials due to error");
+}
+
+console.log(`Testimonials source: ${testimonialsSource}`);
 ---
 
 <Layout title="Gregg Coppen | AI Consulting, Design, Development">
   <main class="bg-transparent">
     <div class="w-full">
-      <FeatureHero client:load />
+      <FeatureHero heroContent={heroContent} source={heroSource} client:load />
       <!-- <Logos client:load /> -->
       <!-- <Features client:load /> -->
-      <ServicesMatrix client:load />
+      <ServicesMatrix services={services} source={servicesSource} client:load />
       <CaseStudiesCarouselWrapper />
-      <Testimonials limit={6} client:load />
+      <Testimonials testimonials={testimonials} source={testimonialsSource} limit={testimonialsLimit} client:load />
       <LatestPosts fullWidth={false} animated={true} />
       <Newsletter client:load />
     </div>

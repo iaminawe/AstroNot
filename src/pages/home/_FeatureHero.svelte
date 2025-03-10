@@ -2,31 +2,16 @@
   import { onMount } from 'svelte';
   import { Button } from "flowbite-svelte";
   import { ArrowRightOutline } from "flowbite-svelte-icons";
-  import { heroContent as configHeroContent } from "../../config/hero";
-  import { fetchHomeHero } from "../../helpers/notion.js";
   
-  // Use config hero content as initial value
-  let heroContent = configHeroContent;
+  // Accept props from parent
+  export let heroContent = {};
+  export let source = "CONFIG";
   
-  // Fetch hero content from Notion if available
-  onMount(async () => {
-    try {
-      // Check if we should fetch from Notion
-      const homeHeroDbId = import.meta.env.VITE_HOME_HERO_DB_ID;
-      const shouldFetchFromNotion = homeHeroDbId && 
-                                   homeHeroDbId !== 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX';
-      
-      if (shouldFetchFromNotion) {
-        const notionHeroContent = await fetchHomeHero();
-        if (notionHeroContent) {
-          heroContent = notionHeroContent;
-        }
-      }
-    } catch (error) {
-      console.error("Error fetching hero content from Notion:", error);
-      // Fallback to config hero content
-      heroContent = configHeroContent;
-    }
+  // Log for debugging
+  onMount(() => {
+    console.log("FeatureHero component mounted");
+    console.log(`Hero content source: ${source}`);
+    console.log("Hero content:", heroContent);
   });
 </script>
 
