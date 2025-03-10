@@ -73,6 +73,59 @@ n2m.setCustomTransformer("video", async (block) => {
 
   return `<iframe width="100%" height="480" src="${url}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`
 });
+
+// Add custom transformer for bookmarks
+n2m.setCustomTransformer("bookmark", async (block) => {
+  const { bookmark } = block;
+  const { url, caption } = bookmark;
+  
+  if (!url) return "";
+  
+  // Try to fetch metadata from the URL
+  let title = '';
+  let description = '';
+  let image = '';
+  
+  try {
+    // Use node-fetch to get the HTML content
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; AstroNotBot/1.0; +https://astronot.dev)'
+      }
+    });
+    
+    if (response.ok) {
+      const html = await response.text();
+      
+      // Extract title
+      const titleMatch = html.match(/<title[^>]*>(.*?)<\/title>/i);
+      if (titleMatch && titleMatch[1]) {
+        title = titleMatch[1].trim();
+      }
+      
+      // Extract description
+      const descriptionMatch = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']*)["'][^>]*>/i) || 
+                              html.match(/<meta[^>]*content=["']([^"']*)["'][^>]*name=["']description["'][^>]*>/i) ||
+                              html.match(/<meta[^>]*property=["']og:description["'][^>]*content=["']([^"']*)["'][^>]*>/i) ||
+                              html.match(/<meta[^>]*content=["']([^"']*)["'][^>]*property=["']og:description["'][^>]*>/i);
+      if (descriptionMatch && descriptionMatch[1]) {
+        description = descriptionMatch[1].trim();
+      }
+      
+      // Extract image
+      const imageMatch = html.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']*)["'][^>]*>/i) ||
+                        html.match(/<meta[^>]*content=["']([^"']*)["'][^>]*property=["']og:image["'][^>]*>/i);
+      if (imageMatch && imageMatch[1]) {
+        image = imageMatch[1].trim();
+      }
+    }
+  } catch (error) {
+    console.warn(`Error fetching metadata for ${url}:`, error.message);
+  }
+  
+  // Return the BookmarkCard component with metadata
+  return `<BookmarkCard url="${url}" ${title ? `title="${title}"` : ''} ${description ? `description="${description}"` : ''} ${image ? `image="${image}"` : ''} />`;
+});
 // Notion Custom Block Transform END
 
 // Fetch Notion Posts from Database via Notion API
@@ -132,6 +185,9 @@ for (let page of pages) {
   const coverFileName = page.cover ? await downloadImage(page.cover, { isCover: true }) : '';
   if (coverFileName) console.info("Cover image downloaded:", coverFileName)
 
+  // Check if the markdown contains a bookmark
+  const hasBookmark = mdString.includes('<BookmarkCard');
+  
   // Generate page contents (frontmatter, MDX imports, + converted Notion markdown)
   const pageContents = `---
 layout: "../../layouts/PostLayout.astro"
@@ -150,6 +206,7 @@ description: "${page.description === 'undefined' ? '' : page.description}"
 reading_time: "${estimatedReadingTime}"
 ---
 import Image from '../../components/Image.astro';
+${hasBookmark ? 'import BookmarkCard from \'../../components/BookmarkCard.astro\';' : ''}
 
 ${mdString}
 `
