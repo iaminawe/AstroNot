@@ -24,18 +24,38 @@ Add the following environment variables to your `.env` file:
 VITE_NOTION_KEY='your_notion_api_key_here'
 
 # Notion Database IDs
+DATABASE_ID='your_posts_database_id_here' # Posts database (used by astronot.js)
+AUTHOR_DB_ID='your_author_database_id_here' # Author database (used by astronot.js)
+VITE_AUTHOR_DB_ID='your_author_database_id_here' # Author database (for enhanced integration)
 VITE_PROJECTS_DB_ID='your_projects_database_id_here'
 VITE_SERVICES_DB_ID='your_services_database_id_here'
 VITE_TESTIMONIALS_DB_ID='your_testimonials_database_id_here'
 VITE_WORK_EXPERIENCE_DB_ID='your_work_experience_database_id_here'
 VITE_ABOUT_DB_ID='your_about_database_id_here'
+VITE_SOCIAL_LINKS_DB_ID='your_social_links_database_id_here'
+VITE_HOME_HERO_DB_ID='your_home_hero_database_id_here'
+VITE_SITE_SETTINGS_DB_ID='your_site_settings_database_id_here'
 ```
 
 > **Note**: If you don't want to use a specific Notion database, simply omit the corresponding environment variable. The website will fall back to using the configuration files in the `src/config` directory.
 
 ## Setting Up Notion Databases
 
-### 1. Social Links Database
+### 1. Author Database
+
+This database is used to manage the author information that appears on blog posts.
+
+1. Create a new database in Notion
+2. Add the following properties:
+   - `name` (Title): The author's name
+   - `bio` (Text): A brief bio for the author
+   - `avatar` (Files & Media): The author's profile image
+   - `active` (Checkbox): Whether this author is active
+
+3. Share the database with your integration
+4. Copy the database ID and add it to your `.env` file as both `AUTHOR_DB_ID` (for astronot.js) and `VITE_AUTHOR_DB_ID` (for enhanced integration)
+
+### 2. Social Links Database
 
 This database is used to manage social media links that will be displayed on the author bio, about page, and footer.
 
@@ -86,7 +106,7 @@ This database is used to showcase your work on the projects page.
 
 5. Add the database ID to your `.env` file as `VITE_PROJECTS_DB_ID`
 
-### 2. Services Database
+### 3. Services Database
 
 This database is used to display your services on the website.
 
@@ -103,7 +123,7 @@ This database is used to display your services on the website.
 3. Share the database with your integration
 4. Copy the database ID and add it to your `.env` file as `VITE_SERVICES_DB_ID`
 
-### 3. Testimonials Database
+### 4. Testimonials Database
 
 This database is used to display client testimonials on the website.
 
@@ -120,7 +140,7 @@ This database is used to display client testimonials on the website.
 3. Share the database with your integration
 4. Copy the database ID and add it to your `.env` file as `VITE_TESTIMONIALS_DB_ID`
 
-### 4. Work Experience Database
+### 5. Work Experience Database
 
 This database is used to display your work experience on the about page.
 
@@ -179,7 +199,7 @@ This database is used to manage the content of the home page hero section.
 3. Share the database with your integration
 4. Copy the database ID and add it to your `.env` file as `VITE_HOME_HERO_DB_ID`
 
-### 7. About Page Content Database
+### 8. About Page Content Database
 
 This database is used to manage the content of the about page.
 

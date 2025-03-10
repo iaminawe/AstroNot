@@ -27,6 +27,52 @@ const n2m = new NotionToMarkdown({ notionClient: notion });
 const THROTTLE_DURATION = 334; // ms - Notion API has a rate limit of 3 requests per second
 
 /**
+ * Fetch author data from Notion database
+ * @returns {Promise<Object>} Author data object
+ */
+export async function fetchAuthor() {
+  if (!notion) {
+    console.warn("Notion client not initialized. Cannot fetch author data.");
+    return null;
+  }
+  
+  const authorDbId = import.meta.env.VITE_AUTHOR_DB_ID;
+  if (!authorDbId) {
+    console.warn("VITE_AUTHOR_DB_ID not found in .env file");
+    return null;
+  }
+
+  try {
+    const { results } = await notion.databases.query({
+      database_id: authorDbId,
+      filter: {
+        property: "active",
+        checkbox: {
+          equals: true
+        }
+      },
+      page_size: 1
+    });
+
+    if (results.length === 0) {
+      console.warn("No active author found in Notion database");
+      return null;
+    }
+
+    const authorPage = results[0];
+    
+    return {
+      name: authorPage.properties.name?.title[0]?.plain_text || "",
+      bio: authorPage.properties.bio?.rich_text[0]?.plain_text || "",
+      avatar: authorPage.properties.avatar?.files[0]?.file?.url || authorPage.properties.avatar?.files[0]?.external?.url || ""
+    };
+  } catch (error) {
+    console.error("Error fetching author data from Notion:", error);
+    return null;
+  }
+}
+
+/**
  * Fetch site settings from Notion database
  * @returns {Promise<Object>} Site settings object
  */

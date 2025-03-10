@@ -56,6 +56,7 @@ AstroNot includes `pnpm` out of the box, and supports `bun`! Feel free to replac
 - Automatically generate Table of Content based on document. Supports nested headings.
 - Images optimized based on view resolution at build time. High resolution images will be converted to the best format and size for the layout.
 - **Enhanced Notion Integration**: Optional integration with multiple Notion databases for dynamic content:
+  - Author database for managing blog post author information
   - Projects database for showcasing your work
   - Services database for displaying your offerings
   - Testimonials database for client feedback

@@ -8,6 +8,8 @@ import TableOfContents from "../components/TableOfContents.astro";
 import LatestPosts from "../components/LatestPosts.astro";
 import Newsletter from "../components/Newsletter.svelte";
 import SocialLinks from "../components/SocialLinks.svelte";
+import { authorData as configAuthorData } from "../config/author";
+import { fetchAuthor } from "../helpers/notion.js";
 
 const { frontmatter } = Astro.props;
 
@@ -33,11 +35,22 @@ const dateStr = new Date(frontmatter.publish_date).toLocaleString("en-US", {
   year: "numeric",
 });
 
-const authorData = Astro.props.authorData || {
-  name: "Gregg Coppen",
-  bio: "Human in the Loop, Designer, Developer, AI Consultant",
-  avatar: "/images/portrait.webp"
-};
+// Fetch author data from Notion if available
+let authorData = Astro.props.authorData || configAuthorData;
+const authorDbId = import.meta.env.VITE_AUTHOR_DB_ID;
+const shouldFetchFromNotion = authorDbId && 
+                             authorDbId !== 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX';
+
+if (shouldFetchFromNotion) {
+  try {
+    const notionAuthorData = await fetchAuthor();
+    if (notionAuthorData) {
+      authorData = notionAuthorData;
+    }
+  } catch (error) {
+    console.error("Error fetching author data from Notion:", error);
+  }
+}
 ---
 
 <Layout title={frontmatter.title}>

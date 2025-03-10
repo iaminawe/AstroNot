@@ -27,6 +27,7 @@
   - Updated `memory-bank/techContext.md` to reflect the latest dependencies and integration points.
 
 - **Enhanced Notion Integration**: Added support for multiple Notion databases:
+  - Author database for managing blog post author information
   - Projects database for showcasing work
   - Services database for displaying offerings
   - Testimonials database for client feedback
@@ -54,6 +55,7 @@
     - SocialLinks component for displaying social media links
     - Enhanced FeatureHero component to use Home Hero database
     - Updated Layout component to use Site Settings database
+    - Updated PostLayout component to use Author database
   - Integrated dynamic content in multiple places:
     - Social links in author bio, about page, and footer
     - Home hero section with customizable title, subtitle, description, image, and CTAs
