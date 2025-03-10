@@ -28,7 +28,7 @@ const THROTTLE_DURATION = 334; // ms - Notion API has a rate limit of 3 requests
 
 /**
  * Fetch author data from Notion database
- * @returns {Promise<Object>} Author data object
+ * @returns {Promise<Object|null>} Author data object or null if not available
  */
 export async function fetchAuthor() {
   if (!notion) {
@@ -37,8 +37,8 @@ export async function fetchAuthor() {
   }
   
   const authorDbId = import.meta.env.VITE_AUTHOR_DB_ID;
-  if (!authorDbId) {
-    console.warn("VITE_AUTHOR_DB_ID not found in .env file");
+  if (!authorDbId || authorDbId === 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX') {
+    console.warn("Valid VITE_AUTHOR_DB_ID not found in .env file");
     return null;
   }
 

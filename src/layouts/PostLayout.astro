@@ -46,10 +46,15 @@ if (shouldFetchFromNotion) {
     const notionAuthorData = await fetchAuthor();
     if (notionAuthorData) {
       authorData = notionAuthorData;
+    } else {
+      console.info("No author data found in Notion, using config fallback");
     }
   } catch (error) {
     console.error("Error fetching author data from Notion:", error);
+    console.info("Using author data from config file as fallback");
   }
+} else {
+  console.info("No VITE_AUTHOR_DB_ID provided, using author data from config file");
 }
 ---
 
