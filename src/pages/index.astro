@@ -8,10 +8,32 @@ import ServicesMatrix from "../components/ServicesMatrix.svelte";
 import LatestPosts from "../components/LatestPosts.astro";
 import CaseStudiesCarouselWrapper from "../components/CaseStudiesCarouselWrapper.astro";
 import Testimonials from "../components/Testimonials.svelte";
-import { fetchServices, fetchHomeHero, fetchTestimonials } from "../helpers/notion.js";
+import { fetchServices, fetchHomeHero } from "../helpers/notion.js";
 import { services as configServices } from "../config/services.ts";
 import { heroContent as configHeroContent } from "../config/hero.ts";
 import { testimonials as configTestimonials } from "../config/testimonials.ts";
+
+// Import static data (generated during build)
+// Use try-catch to handle the case where the file doesn't exist yet
+let staticTestimonials = [];
+let staticHeroContent = null;
+let staticServices = [];
+let staticSocialLinks = [];
+let staticWorkExperience = [];
+let staticAuthor = null;
+
+try {
+  // Import from the central data index file
+  const dataModule = await import("../data/index.js");
+  staticTestimonials = dataModule.testimonials || [];
+  staticHeroContent = dataModule.heroContent || null;
+  staticServices = dataModule.services || [];
+  staticSocialLinks = dataModule.socialLinks || [];
+  staticWorkExperience = dataModule.workExperience || [];
+  staticAuthor = dataModule.author || null;
+} catch (error) {
+  console.warn("Could not import static data:", error.message);
+}
 
 // Debug environment variables
 console.log("=== DEBUG ENV VARIABLES ===");
@@ -21,86 +43,29 @@ console.log("VITE_HOME_HERO_DB_ID:", import.meta.env.VITE_HOME_HERO_DB_ID);
 console.log("VITE_TESTIMONIALS_DB_ID:", import.meta.env.VITE_TESTIMONIALS_DB_ID);
 console.log("=== END DEBUG ===");
 
-// Fetch services from Notion on the server side
-let services = configServices;
-let servicesSource = "CONFIG";
-
-try {
-  const notionServices = await fetchServices();
-  if (notionServices && notionServices.length > 0) {
-    services = notionServices;
-    servicesSource = "NOTION";
-    console.log("Using services from Notion");
-  } else {
-    console.log("No services found in Notion, using config file");
-  }
-} catch (error) {
-  console.error("Error fetching services from Notion:", error);
-  console.log("Using config services due to error");
-}
+// Use static services data (generated during build)
+// Fall back to config services if static data is not available
+let services = staticServices.length > 0 ? staticServices : configServices;
+let servicesSource = staticServices.length > 0 ? "STATIC" : "CONFIG";
 
 console.log(`Services source: ${servicesSource}`);
+console.log(`Services count: ${services.length}`);
 
-// Fetch hero content from Notion on the server side
-let heroContent = configHeroContent;
-let heroSource = "CONFIG";
-
-try {
-  // Check if we should fetch from Notion
-  const homeHeroDbId = import.meta.env.VITE_HOME_HERO_DB_ID;
-  const shouldFetchFromNotion = homeHeroDbId && homeHeroDbId !== 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX';
-  
-  if (shouldFetchFromNotion) {
-    console.log("Fetching hero content from Notion...");
-    const notionHeroContent = await fetchHomeHero();
-    
-    if (notionHeroContent) {
-      heroContent = notionHeroContent;
-      heroSource = "NOTION";
-      console.log("Using hero content from Notion");
-    } else {
-      console.log("No hero content found in Notion, using config file");
-    }
-  } else {
-    console.log("Not fetching hero content from Notion, using config");
-  }
-} catch (error) {
-  console.error("Error fetching hero content from Notion:", error);
-  console.log("Using config hero content due to error");
-}
+// Use static hero content (generated during build)
+// Fall back to config hero content if static data is not available
+let heroContent = staticHeroContent ? staticHeroContent : configHeroContent;
+let heroSource = staticHeroContent ? "STATIC" : "CONFIG";
 
 console.log(`Hero source: ${heroSource}`);
 
-// Fetch testimonials from Notion on the server side
-let testimonials = configTestimonials;
-let testimonialsSource = "CONFIG";
+// Use static testimonials data (generated during build)
+// Fall back to config testimonials if static data is not available
+let testimonials = staticTestimonials || configTestimonials;
+let testimonialsSource = staticTestimonials ? "STATIC" : "CONFIG";
 let testimonialsLimit = 6; // Default limit
 
-try {
-  // Check if we should fetch from Notion
-  const testimonialsDbId = import.meta.env.VITE_TESTIMONIALS_DB_ID;
-  const shouldFetchFromNotion = testimonialsDbId && testimonialsDbId !== 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX';
-  
-  if (shouldFetchFromNotion) {
-    console.log("Fetching testimonials from Notion...");
-    const notionTestimonials = await fetchTestimonials();
-    
-    if (notionTestimonials && notionTestimonials.length > 0) {
-      testimonials = notionTestimonials;
-      testimonialsSource = "NOTION";
-      console.log("Using testimonials from Notion");
-    } else {
-      console.log("No testimonials found in Notion, using config file");
-    }
-  } else {
-    console.log("Not fetching testimonials from Notion, using config");
-  }
-} catch (error) {
-  console.error("Error fetching testimonials from Notion:", error);
-  console.log("Using config testimonials due to error");
-}
-
 console.log(`Testimonials source: ${testimonialsSource}`);
+console.log(`Testimonials count: ${testimonials.length}`);
 ---
 
 <Layout title="Gregg Coppen | AI Consulting, Design, Development">

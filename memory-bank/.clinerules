@@ -3,16 +3,19 @@
 ## Project Intelligence
 
 ### Critical Implementation Paths
-- **Notion Integration**: The core functionality of syncing Notion content with the website is handled by `src/astronot.js`.
+- **Notion Integration**: The core functionality of syncing Notion content with the website is handled by `src/astronot.js` and `src/helpers/notion.js`.
 - **MarkdownX Export**: Notion content is converted to MarkdownX in `src/helpers/sanitize.mjs`.
 - **Image Optimization**: Images are optimized using Sharp in `src/helpers/images.mjs`.
 - **State Management**: Svelte components use nanostores for state management, particularly in `src/stores/layout.ts`.
+- **Markdown Rendering**: Markdown content from Notion is rendered using the marked library in project pages (`src/pages/projects/[slug].astro`).
+- **S3 Integration**: Notion images can be uploaded to S3 using the AWS SDK in `src/helpers/s3.js`.
 
 ### User Preferences and Workflow
 - **Development Environment**: Developers use `pnpm` for dependency management and `pnpm dev` to start the local development server.
 - **Building**: The website is built using `pnpm build` for production.
 - **Syncing Notion Content**: Notion content is synced using `pnpm sync`.
 - **Generating Production Build**: The production build is generated using `pnpm generate`.
+- **Image Storage Options**: Notion images can be stored locally or in S3 using `pnpm sync:images:local` or `pnpm sync:images:s3`.
 
 ### Project-Specific Patterns
 - **Component-Based Architecture**: The project is structured with reusable components in `src/components/`.
@@ -22,18 +25,24 @@
 ### Known Challenges
 - **Notion API Limits**: Monitoring and managing API usage to avoid rate limits and usage quotas.
 - **Performance Optimization**: Ensuring fast page loads and smooth transitions, particularly with image optimization.
+- **Project vs Blog Performance Gap**: Projects page and individual project pages load significantly slower than blog posts, requiring optimization to match blog post performance.
 - **Security**: Implementing and maintaining robust security measures to protect the website and its users.
+- **Markdown Rendering Consistency**: Ensuring consistent rendering of Markdown content from Notion across different page types.
+- **Error Handling**: Implementing robust error handling for Notion API requests with graceful fallbacks to configuration files.
+- **Image Storage**: Managing Notion images which have temporary URLs that expire after a certain period.
 
 ### Evolution of Project Decisions
 - **Tech Stack Choice**: The decision to use the FAST stack (Flowbite, Astro, Svelte, Tailwind) was based on performance, flexibility, and ease of use.
 - **Notion Integration**: The choice to integrate with Notion was driven by the need for a flexible and customizable content management system.
 - **Open-Source Model**: The decision to maintain an open-source model was based on the potential to attract developers and users who value transparency and community contributions.
+- **S3 Integration**: The decision to add S3 support for Notion images was driven by the need for better scalability and reliability in production environments.
 
 ### Tool Usage Patterns
 - **VSCode**: The primary IDE used for development, with extensions for Tailwind CSS, Svelte, and Astro.
 - **Git**: Used for version control, with GitHub as the remote repository.
 - **CI/CD**: A CI/CD pipeline is set up for automated testing, building, and deployment.
 - **Environment Variables**: Used to manage configuration settings, ensuring that sensitive information is not hard-coded.
+- **AWS S3**: Used for storing Notion images in production environments.
 
 ## Additional Notes
 - **Documentation Priority**: Ensuring that the Memory Bank is up-to-date and accurate is a top priority to maintain clarity and consistency in the project's development and maintenance.
@@ -56,3 +65,52 @@
 - **Svelte Inspector Update**: Updated Svelte Inspector to the latest version (`^4.0.1`).
 - **Astro Config Update**: Updated `astro.config.mjs` to include the Svelte Inspector plugin.
 - **Tech Context Update**: Updated `memory-bank/techContext.md` to reflect the latest dependencies and integration points.
+- **Marked Library Added**: Added the marked library for consistent Markdown rendering.
+- **Project Page Update**: Enhanced project page to use marked for Markdown rendering.
+- **Notion Integration Verified**: Confirmed all Notion integrations are working correctly.
+- **AWS SDK Added**: Added AWS SDK for S3 integration (`@aws-sdk/client-s3` and `@aws-sdk/s3-request-presigner`).
+- **S3 Integration**: Added support for uploading Notion images to S3 during build.
+
+## Notion Integration Patterns
+- **Environment Variables**: Notion API key and database IDs are stored in environment variables.
+- **Fallback Configuration**: Each Notion-powered component has a corresponding configuration file as a fallback.
+- **Error Handling**: Robust error handling with try/catch blocks and fallbacks to configuration files.
+- **Rate Limiting**: Throttling of API requests to avoid hitting Notion API rate limits.
+- **Logging**: Detailed logging of Notion API requests and responses for debugging.
+- **Caching**: Caching of Notion content to reduce API calls and improve performance.
+- **Markdown Rendering**: Consistent rendering of Markdown content from Notion using the marked library.
+- **Image Handling**: Notion images are downloaded and stored locally or in S3 during build.
+
+## Performance Optimization Patterns
+- **Static Generation vs. Dynamic Loading**: Blog posts using static generation perform significantly better than projects using dynamic loading.
+- **Build-time vs. Runtime Data Fetching**: Moving data fetching from runtime to build time significantly improves page load performance.
+- **Static Site Generation Pattern**: All Notion content should be fetched during the build process and converted to static files or data, rather than fetched at runtime. This pattern should be applied consistently across all content types:
+  - **Projects**: Generate .mdx files during build using Notion data
+  - **Testimonials**: Generate static JSON data during build
+  - **Services**: Generate static JSON data during build
+  - **Work Experience**: Generate static JSON data during build
+  - **Home Hero**: Generate static JSON data during build
+  - **Social Links**: Generate static JSON data during build
+  - **Author Information**: Generate static JSON data during build
+  - **Notion Images**: Download and localize Notion images during build
+- **Implementation Strategy**:
+  - Create Node.js scripts that fetch data from Notion during build
+  - Use process.env for environment variables in Node.js scripts
+  - Add build scripts to package.json to run before Astro build
+  - Remove runtime Notion API calls from Astro components
+  - Use static data files or generated markdown in components
+  - Download and store Notion images locally to prevent broken links due to expired URLs
+  - Optionally upload Notion images to S3 for better scalability and reliability in production environments
+- **Image Optimization**: Use Astro's built-in image optimization for all images, including those from Notion.
+- **Cache Headers**: Implement consistent cache headers across all static assets to improve browser caching.
+- **S3 Storage**: Use S3 for storing Notion images in production environments with appropriate cache headers.
+
+## S3 Integration Patterns
+- **Environment Variables**: AWS credentials and S3 configuration are stored in environment variables.
+- **Automatic Detection**: The system automatically detects if S3 credentials are available and uses the appropriate storage method.
+- **Fallback Mechanism**: If S3 credentials are not available, the system falls back to local storage.
+- **Image Manifest**: A manifest file is used to track which images have been processed and where they are stored.
+- **Content Type Detection**: The system automatically detects the content type of images based on their extension.
+- **Cache Control**: S3 objects are set with appropriate cache control headers for optimal performance.
+- **Public URLs**: S3 objects are made publicly accessible with ACL settings.
+- **Command Line Options**: The system provides command line options to force local or S3 storage regardless of environment variables.

@@ -10,6 +10,7 @@
 - **Vite**: The build tool used by Astro for fast development and optimized builds.
 - **Sharp**: A high-performance image processing library.
 - **Notion-to-MD**: A library for converting Notion content to Markdown.
+- **Marked**: A markdown parser and compiler for rendering Markdown content consistently.
 - **Reading Time**: A library for calculating reading time based on content length.
 - **Lodash**: A utility library for common programming tasks.
 - **Nanostores**: A state management library for Svelte.
@@ -34,6 +35,7 @@
 - **Tailwind CSS**: `^3.4.3`
 - **Notion API**: `^2.2.15`
 - **Notion-to-MD**: `^4.0.8`
+- **Marked**: `^11.1.1`
 - **Reading Time**: `^1.5.0`
 - **Sharp**: `^0.33.4`
 - **Lodash**: `^4.17.21`
@@ -48,6 +50,7 @@
 - **Tailwind CSS**: Used for styling the website.
 - **Sharp**: Used for image optimization.
 - **Notion-to-MD**: Used for converting Notion content to Markdown.
+- **Marked**: Used for rendering Markdown content consistently across different page types.
 - **Reading Time**: Used for calculating reading time based on content length.
 - **Lodash**: Used for common programming tasks.
 - **Nanostores**: Used for state management in Svelte components.

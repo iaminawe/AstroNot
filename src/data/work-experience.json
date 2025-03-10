@@ -1,0 +1,26 @@
+[
+  {
+    "title": "Senior Developer",
+    "company": "Example Corp",
+    "location": "San Francisco, CA",
+    "period": "2020-01 - Present",
+    "description": [
+      "Led development of key product features",
+      "Managed team of 5 developers",
+      "Implemented CI/CD pipeline"
+    ],
+    "skills": ["JavaScript", "React", "Node.js"]
+  },
+  {
+    "title": "Web Developer",
+    "company": "Sample Inc",
+    "location": "Remote",
+    "period": "2018-03 - 2019-12",
+    "description": [
+      "Built responsive web applications",
+      "Optimized site performance",
+      "Collaborated with design team"
+    ],
+    "skills": ["HTML", "CSS", "JavaScript"]
+  }
+]

@@ -1,0 +1,41 @@
+[
+  {
+    "name": "Implementation",
+    "icon": "",
+    "items": [
+      {
+        "title": "And another one",
+        "description": "This is a descriptionThis is a descriptionThis is a description",
+        "icon": "ArrowRightOutline",
+        "url": "/services/findoutmore",
+        "order": 0
+      }
+    ]
+  },
+  {
+    "name": "Strategy",
+    "icon": "",
+    "items": [
+      {
+        "title": "Another Service",
+        "description": "This is a descriptionThis is a descriptionThis is a description",
+        "icon": "ArrowRightOutline",
+        "url": "/services/findoutmore",
+        "order": 0
+      }
+    ]
+  },
+  {
+    "name": "Training",
+    "icon": "ArrowRightOutline",
+    "items": [
+      {
+        "title": "New Service",
+        "description": "This is a descriptionThis is a description",
+        "icon": "ArrowRightOutline",
+        "url": "/services/findoutmore",
+        "order": 1
+      }
+    ]
+  }
+]

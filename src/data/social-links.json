@@ -1,0 +1,20 @@
+[
+  {
+    "id": "sample-social-link-1",
+    "name": "Twitter",
+    "url": "https://twitter.com/example",
+    "icon": "TwitterOutline",
+    "iconType": "component",
+    "order": 0,
+    "active": true
+  },
+  {
+    "id": "sample-social-link-2",
+    "name": "GitHub",
+    "url": "https://github.com/example",
+    "icon": "GitHubOutline",
+    "iconType": "component",
+    "order": 1,
+    "active": true
+  }
+]

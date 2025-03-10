@@ -2,31 +2,14 @@
 import { getImage } from "astro:assets";
 import Layout from "../layouts/Layout.astro";
 import Tags from "../components/Tags.astro";
-import { fetchProjects } from "../helpers/notion.js";
 import { authorData as configAuthorData } from "../config/author";
 import { fetchAuthor } from "../helpers/notion.js";
 
 const PROJECTS_PATH = "projects";
 const COVER_IMG_ASPECT_RATIO = "13/9"; // TODO: Expose as variable
 
-// Check if we should fetch from Notion
-const shouldFetchFromNotion = import.meta.env.VITE_PROJECTS_DB_ID &&
-                             import.meta.env.VITE_PROJECTS_DB_ID !== 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX';
-
-// Initialize projects array
-let projects = [];
-
-// Fetch projects from Notion if database ID is provided otherwise use empty array
-if (shouldFetchFromNotion) {
-  try {
-    const notionProjects = await fetchProjects();
-    if (notionProjects && notionProjects.length > 0) {
-      projects = notionProjects;
-    }
-  } catch (error) {
-    console.error("Error fetching projects from Notion:", error);
-  }
-}
+// Get all projects from static markdown files
+const projects = await Astro.glob("./projects/*.mdx");
 
 // Fetch author data from Notion if available
 let authorData = configAuthorData;
@@ -74,36 +57,37 @@ if (shouldFetchAuthorFromNotion) {
         <div
           class="mt-8 grid items-center gap-8 md:grid-cols-2 lg:mt-16 xl:grid-cols-3"
         >
-          {/* Notion Projects */}
+          {/* Static Projects */}
           {projects.map((project) => {
+            const { frontmatter } = project;
             let coverImageSrc = "";
             let preloadCoverImageSrc = "";
             let preloadCoverImageMobileSrc = "";
 
-            if (project.coverImage) {
+            if (frontmatter.cover) {
               try {
                 // For external images from Notion
-                coverImageSrc = project.coverImage;
-                preloadCoverImageSrc = project.coverImage;
-                preloadCoverImageMobileSrc = project.coverImage;
+                coverImageSrc = frontmatter.cover;
+                preloadCoverImageSrc = frontmatter.cover;
+                preloadCoverImageMobileSrc = frontmatter.cover;
               } catch (error) {
-                console.error(`Error processing image for ${project.title}:`, error);
+                console.error(`Error processing image for ${frontmatter.title}:`, error);
               }
             }
 
             return (
               <a
-                href={`/${PROJECTS_PATH}/${project.slug}`}
+                href={`/${PROJECTS_PATH}/${frontmatter.slug}`}
                 class="post-link-container contents"
               >
                 <article class="h-fit transform rounded-lg border border-gray-200 bg-white shadow-md transition duration-100 ease-in dark:border-gray-700 dark:bg-gray-800 sm:hover:scale-[102%] lg:hover:scale-105">
-                  {project.coverImage && (
+                  {frontmatter.cover && (
                     <div>
                       <img
                         class={`mb-1 h-auto w-full rounded-md rounded-b-none object-cover`}
                         style={`aspect-ratio: ${COVER_IMG_ASPECT_RATIO}`}
                         src={coverImageSrc}
-                        alt={project.title}
+                        alt={frontmatter.title}
                       />
                       {preloadCoverImageSrc && (
                         <link rel="prefetch" href={preloadCoverImageSrc} as="image" />
@@ -114,16 +98,16 @@ if (shouldFetchAuthorFromNotion) {
                     </div>
                   )}
                   <div class="p-4">
-                    {project.tags && project.tags.length > 0 && (
-                      <Tags tags={project.tags} />
+                    {frontmatter.tags && frontmatter.tags.length > 0 && (
+                      <Tags tags={frontmatter.tags} />
                     )}
 
                     <h2 class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
-                      {project.title}
+                      {frontmatter.title}
                     </h2>
 
                     <p class="mb-4 whitespace-pre-line font-light text-gray-500 dark:text-gray-400">
-                      {project.description}
+                      {frontmatter.description}
                     </p>
 
                     {/* Author Section */}
