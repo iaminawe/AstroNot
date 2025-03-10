@@ -21,9 +21,10 @@ console.log(`Syncing Published Only: ${isPublished}`)
 
 // Load ENV Variables
 config();
-if (!process.env.NOTION_KEY || !process.env.DATABASE_ID) throw new Error("Missing Notion .env data")
+if (!process.env.NOTION_KEY || !process.env.DATABASE_ID || !process.env.AUTHOR_DB_ID) throw new Error("Missing Notion .env data")
 const NOTION_KEY = process.env.NOTION_KEY;
 const DATABASE_ID = process.env.DATABASE_ID; // TODO: Import from ENV
+const AUTHOR_DB_ID = process.env.AUTHOR_DB_ID; // New Author DB ID
 
 const POSTS_PATH = `src/pages/posts`;
 const THROTTLE_DURATION = 334; // ms Notion API has a rate limit of 3 requests per second, so ensure that is not exceeded
@@ -161,3 +162,19 @@ ${mdString}
 }
 
 console.info("Successfully synced posts with Notion")
+
+// Fetch Author Data
+async function syncAuthor() {
+  const { results } = await notion.databases.query({
+    database_id: AUTHOR_DB_ID,
+    filter: { property: "Active", checkbox: { equals: true } }
+  });
+  return results.map(author => ({
+    name: author.properties.Name.title[0].plain_text,
+    bio: author.properties.Bio.rich_text[0].plain_text,
+    avatar: author.properties.Avatar.files[0].file.url
+  }));
+}
+
+const authorData = await syncAuthor();
+console.info("Successfully synced author data:", authorData);

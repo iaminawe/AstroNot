@@ -1,0 +1,58 @@
+# Cline Rules
+
+## Project Intelligence
+
+### Critical Implementation Paths
+- **Notion Integration**: The core functionality of syncing Notion content with the website is handled by `src/astronot.js`.
+- **MarkdownX Export**: Notion content is converted to MarkdownX in `src/helpers/sanitize.mjs`.
+- **Image Optimization**: Images are optimized using Sharp in `src/helpers/images.mjs`.
+- **State Management**: Svelte components use nanostores for state management, particularly in `src/stores/layout.ts`.
+
+### User Preferences and Workflow
+- **Development Environment**: Developers use `pnpm` for dependency management and `pnpm dev` to start the local development server.
+- **Building**: The website is built using `pnpm build` for production.
+- **Syncing Notion Content**: Notion content is synced using `pnpm sync`.
+- **Generating Production Build**: The production build is generated using `pnpm generate`.
+
+### Project-Specific Patterns
+- **Component-Based Architecture**: The project is structured with reusable components in `src/components/`.
+- **Layout Components**: Layout components are located in `src/layouts/`, with `Layout.astro` and `PostLayout.astro` being key files.
+- **Helper Functions**: Helper functions are located in `src/helpers/`, with `sanitize.mjs` and `images.mjs` being particularly important.
+
+### Known Challenges
+- **Notion API Limits**: Monitoring and managing API usage to avoid rate limits and usage quotas.
+- **Performance Optimization**: Ensuring fast page loads and smooth transitions, particularly with image optimization.
+- **Security**: Implementing and maintaining robust security measures to protect the website and its users.
+
+### Evolution of Project Decisions
+- **Tech Stack Choice**: The decision to use the FAST stack (Flowbite, Astro, Svelte, Tailwind) was based on performance, flexibility, and ease of use.
+- **Notion Integration**: The choice to integrate with Notion was driven by the need for a flexible and customizable content management system.
+- **Open-Source Model**: The decision to maintain an open-source model was based on the potential to attract developers and users who value transparency and community contributions.
+
+### Tool Usage Patterns
+- **VSCode**: The primary IDE used for development, with extensions for Tailwind CSS, Svelte, and Astro.
+- **Git**: Used for version control, with GitHub as the remote repository.
+- **CI/CD**: A CI/CD pipeline is set up for automated testing, building, and deployment.
+- **Environment Variables**: Used to manage configuration settings, ensuring that sensitive information is not hard-coded.
+
+## Additional Notes
+- **Documentation Priority**: Ensuring that the Memory Bank is up-to-date and accurate is a top priority to maintain clarity and consistency in the project's development and maintenance.
+- **Performance Optimization**: Continuously monitor and optimize the performance of the website to ensure fast page loads and smooth navigation transitions.
+- **Security**: Implement and maintain robust security measures to protect the website and its users from potential threats.
+- **User Experience**: Focus on providing a seamless and intuitive user experience, with a strong emphasis on customization and ease of use.
+
+## Recent Updates
+- **Astro Update**: Updated Astro to the latest version (`^5.3.0`).
+- **Flowbite Update**: Updated Flowbite to the latest version (`^0.47.4`).
+- **Svelte Update**: Updated Svelte to the latest version (`^5.20.1`).
+- **Tailwind CSS Update**: Updated Tailwind CSS to the latest version (`^3.4.3`).
+- **Notion API Update**: Updated Notion API to the latest version (`^2.2.15`).
+- **Notion-to-MD Update**: Updated Notion-to-MD to the latest version (`^4.0.8`).
+- **Reading Time Update**: Updated Reading Time to the latest version (`^1.5.0`).
+- **Sharp Update**: Updated Sharp to the latest version (`^0.33.4`).
+- **Lodash Update**: Updated Lodash to the latest version (`^4.17.21`).
+- **Nanostores Update**: Updated Nanostores to the latest version (`^0.10.3`).
+- **Vite Update**: Updated Vite to the latest version (`^6.1.0`).
+- **Svelte Inspector Update**: Updated Svelte Inspector to the latest version (`^4.0.1`).
+- **Astro Config Update**: Updated `astro.config.mjs` to include the Svelte Inspector plugin.
+- **Tech Context Update**: Updated `memory-bank/techContext.md` to reflect the latest dependencies and integration points.

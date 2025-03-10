@@ -1,9 +1,254 @@
 ---
 import Layout from "../layouts/Layout.astro";
+import Timeline from "../components/Timeline.svelte";
+import { Badge } from "flowbite-svelte";
+import { fetchAboutContent, fetchWorkExperience } from "../helpers/notion.js";
+import { aboutContent as configAboutContent } from "../config/about";
+import { resumeData } from "../config/resume";
+
+// Check if we should fetch from Notion
+const shouldFetchAboutFromNotion = import.meta.env.VITE_ABOUT_DB_ID && 
+                                  import.meta.env.VITE_ABOUT_DB_ID !== 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX';
+const shouldFetchWorkFromNotion = import.meta.env.VITE_WORK_EXPERIENCE_DB_ID && 
+                                 import.meta.env.VITE_WORK_EXPERIENCE_DB_ID !== 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX';
+
+// Fetch data from Notion or use config fallbacks
+let aboutContent = configAboutContent;
+let workExperience = resumeData.workExperience;
+
+if (shouldFetchAboutFromNotion) {
+  try {
+    const notionAboutContent = await fetchAboutContent();
+    if (notionAboutContent && Object.keys(notionAboutContent).length > 0) {
+      aboutContent = notionAboutContent;
+    }
+  } catch (error) {
+    console.error("Error fetching about content from Notion:", error);
+  }
+}
+
+if (shouldFetchWorkFromNotion) {
+  try {
+    const notionWorkExperience = await fetchWorkExperience();
+    if (notionWorkExperience && notionWorkExperience.length > 0) {
+      workExperience = notionWorkExperience;
+    }
+  } catch (error) {
+    console.error("Error fetching work experience from Notion:", error);
+  }
+}
+
+// Use education from resume data or fallback
+const education = resumeData.education || [
+  {
+    degree: "Bachelor of Arts in Graphic Design",
+    institution: "Durban University of Technology",
+    location: "Durban, South Africa",
+    period: "2001 - 2005",
+    description: "Focused on digital media, interactive design, and web development."
+  },
+  {
+    degree: "Certificate in Advanced Web Development",
+    institution: "London School of Digital Marketing",
+    location: "London, UK",
+    period: "2011",
+    description: "Specialized training in modern web technologies and frameworks."
+  }
+];
+
+// Use skills from resume data or fallback
+const skills = resumeData.skills || [
+  {
+    category: "Development",
+    items: ["JavaScript", "TypeScript", "React", "Svelte", "Astro", "Node.js", "PHP", "Drupal", "WordPress"]
+  },
+  {
+    category: "Design",
+    items: ["UI/UX Design", "Figma", "Framer", "Adobe Creative Suite", "Design Systems", "Responsive Design", "Animation"]
+  },
+  {
+    category: "AI & Emerging Tech",
+    items: ["AI Implementation", "LLM Integration", "Prompt Engineering", "Agent Development", "API Integration"]
+  },
+  {
+    category: "Soft Skills",
+    items: ["Project Management", "Client Relations", "Team Leadership", "Technical Writing", "Public Speaking", "Mentoring"]
+  }
+];
 ---
 
-<Layout title="Blog">
-  <div class="flex h-full w-full items-center justify-center">
-    Insert content here
+<Layout title="About">
+  <!-- About Section -->
+  <div class="mx-auto w-full max-w-7xl lg:px-8 mt-10 mb-10">
+    <div class="relative px-4 sm:px-8 lg:px-12">
+      <div class="mx-auto max-w-2xl lg:max-w-5xl">
+        <div
+          class="grid grid-cols-1 gap-y-16 lg:grid-cols-2 lg:grid-rows-[auto_1fr] lg:gap-y-12"
+        >
+          <div class="lg:pl-20">
+            <div class="max-w-xs px-2.5 lg:max-w-none">
+              <img
+                alt={aboutContent.profileImage.alt}
+                loading="lazy"
+                width="800"
+                height="800"
+                decoding="async"
+                data-nimg="1"
+                class="aspect-square rotate-3 rounded-2xl bg-zinc-100 object-cover dark:bg-zinc-800"
+                sizes="(min-width: 1024px) 32rem 20rem"
+                src={aboutContent.profileImage.src}
+                style="color: transparent;"
+              />
+            </div>
+          </div><div class="lg:order-first lg:row-span-2">
+            <h1
+              class="text-4xl font-bold tracking-tight text-zinc-800 dark:text-zinc-100 sm:text-5xl"
+            >
+              {aboutContent.title}
+            </h1><div
+              class="mt-6 space-y-7 text-base text-zinc-600 dark:text-zinc-400"
+            >
+              {aboutContent.paragraphs.map((paragraph) => (
+                <p>{paragraph}</p>
+              ))}
+            </div>
+          </div><div class="lg:pl-20">
+            <ul role="list">
+              {aboutContent.socialLinks.map((link, index) => (
+                <li class={index > 0 ? "mt-4 flex" : "flex"}>
+                  <a
+                    class="group flex text-sm font-medium text-zinc-800 transition hover:text-teal-500 dark:text-zinc-200 dark:hover:text-teal-500"
+                    href={link.url}
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                      class="h-6 w-6 flex-none fill-zinc-500 transition group-hover:fill-teal-500"
+                    >
+                      <path
+                        d={link.icon}
+                      ></path>
+                    </svg>
+                    <span class="ml-4">{link.name}</span>
+                  </a>
+                </li>
+              ))}
+              <li
+                class="mt-8 flex border-t border-zinc-100 pt-8 dark:border-zinc-700/40"
+              >
+                <a
+                  class="group flex text-sm font-medium text-zinc-800 transition hover:text-teal-500 dark:text-zinc-200 dark:hover:text-teal-500"
+                  href={`mailto:${aboutContent.email.address}`}
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                    class="h-6 w-6 flex-none fill-zinc-500 transition group-hover:fill-teal-500"
+                  >
+                    <path
+                      fill-rule="evenodd"
+                      d="M6 5a3 3 0 0 0-3 3v8a3 3 0 0 0 3 3h12a3 3 0 0 0 3-3V8a3 3 0 0 0-3-3H6Zm.245 2.187a.75.75 0 0 0-.99 1.126l6.25 5.5a.75.75 0 0 0 .99 0l6.25-5.5a.75.75 0 0 0-.99-1.126L12 12.251 6.245 7.187Z"
+                    ></path>
+                  </svg>
+                  <span class="ml-4">{aboutContent.email.label}</span>
+                </a>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Resume Section -->
+  <div class="bg-gray-50 dark:bg-gray-800 py-12">
+    <div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+      <div class="mb-10 text-center">
+        <h2 class="mb-2 text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
+          Professional Experience
+        </h2>
+        <p class="mx-auto max-w-3xl text-base text-gray-500 dark:text-gray-400">
+          Creative professional with over two decades of experience in web development, design, and animation. Specializing in crafting powerful scalable platforms that meet technical demands while captivating users through intuitive design and engaging experiences.
+        </p>
+      </div>
+
+      <div class="mb-12">
+        <div class="mb-6 flex items-center">
+          <div class="mr-4 h-0.5 flex-grow bg-gray-200 dark:bg-gray-700"></div>
+          <h3 class="text-xl font-bold text-gray-900 dark:text-white">Work Experience</h3>
+          <div class="ml-4 h-0.5 flex-grow bg-gray-200 dark:bg-gray-700"></div>
+        </div>
+        
+        <Timeline 
+          items={workExperience} 
+          client:load
+        />
+      </div>
+
+      <div class="mb-12">
+        <div class="mb-6 flex items-center">
+          <div class="mr-4 h-0.5 flex-grow bg-gray-200 dark:bg-gray-700"></div>
+          <h3 class="text-xl font-bold text-gray-900 dark:text-white">Education</h3>
+          <div class="ml-4 h-0.5 flex-grow bg-gray-200 dark:bg-gray-700"></div>
+        </div>
+        
+        <ol class="relative border-l border-gray-200 dark:border-gray-700">
+          {education.map((edu) => (
+            <li class="mb-10 ml-6">
+              <span class="absolute flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 ring-8 ring-white dark:bg-blue-900 dark:ring-gray-900 -left-3">
+                <svg class="h-2.5 w-2.5 text-blue-800 dark:text-blue-300" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M20 4a2 2 0 0 0-2-2h-2V1a1 1 0 0 0-2 0v1h-3V1a1 1 0 0 0-2 0v1H6V1a1 1 0 0 0-2 0v1H2a2 2 0 0 0-2 2v2h20V4ZM0 18a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8H0v10Zm5-8h10a1 1 0 0 1 0 2H5a1 1 0 0 1 0-2Z"/>
+                </svg>
+              </span>
+              <h4 class="mb-1 flex items-center text-lg font-semibold text-gray-900 dark:text-white">
+                {edu.degree}
+              </h4>
+              <div class="mb-2 text-base font-normal">
+                <span class="text-gray-500 dark:text-gray-400">{edu.institution}</span>
+                <span class="mx-2 text-gray-400">•</span>
+                <span class="text-gray-500 dark:text-gray-400">{edu.location}</span>
+              </div>
+              <time class="block mb-2 text-sm font-normal leading-none text-gray-400 dark:text-gray-500">{edu.period}</time>
+              {edu.description && (
+                <p class="text-base font-normal text-gray-500 dark:text-gray-400">{edu.description}</p>
+              )}
+            </li>
+          ))}
+        </ol>
+      </div>
+
+      <div class="mb-12">
+        <div class="mb-6 flex items-center">
+          <div class="mr-4 h-0.5 flex-grow bg-gray-200 dark:bg-gray-700"></div>
+          <h3 class="text-xl font-bold text-gray-900 dark:text-white">Skills</h3>
+          <div class="ml-4 h-0.5 flex-grow bg-gray-200 dark:bg-gray-700"></div>
+        </div>
+        
+        <div class="grid gap-8 md:grid-cols-2">
+          {skills.map((skillGroup) => (
+            <div class="mb-6">
+              <h4 class="mb-3 text-lg font-semibold text-gray-900 dark:text-white">{skillGroup.category}</h4>
+              <div class="flex flex-wrap gap-2">
+                {skillGroup.items.map((skill) => (
+                  <Badge color="indigo" class="font-normal">{skill}</Badge>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div class="mt-12 text-center">
+        <a 
+          href="#" 
+          class="inline-flex items-center rounded-lg bg-blue-700 px-5 py-2.5 text-center text-sm font-medium text-white hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+        >
+          Download Full Resume
+          <svg class="ml-2 h-3.5 w-3.5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 10">
+            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M1 5h12m0 0L9 1m4 4L9 9"/>
+          </svg>
+        </a>
+      </div>
+    </div>
   </div>
 </Layout>

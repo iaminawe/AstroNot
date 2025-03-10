@@ -18,7 +18,7 @@ const { width, height, src: imgSrc } = imgData;
 
 {
   imgType === "bmp" ? (
-    <img src={relativeSrc} alt={alt} class={imageClass} />
+    <img src={relativeSrc} alt={alt} class={imageClass} style="will-change: opacity;" />
   ) : (
     <AstroImage
       src={imgData}
@@ -26,6 +26,7 @@ const { width, height, src: imgSrc } = imgData;
       class={imageClass}
       width={width < MAX_WIDTH ? width : MAX_WIDTH}
       height={height}
+      style="will-change: opacity;"
     />
   )
 }

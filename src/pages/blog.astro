@@ -10,7 +10,7 @@ import { PenSolid } from "flowbite-svelte-icons";
 const POSTS_PATH = "posts";
 const COVER_IMG_ASPECT_RATIO = "13/9"; // TODO: Expose as variable
 
-const { showTagsFilter = true } = Astro.props;
+const { showTagsFilter = false } = Astro.props;
 
 const posts = await Astro.glob("./posts/*.mdx");
 

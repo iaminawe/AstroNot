@@ -28,7 +28,7 @@ Space requires **FAST** speeds, so AstroNot is built for performance with the **
 
 - **Flowbite**: Flowbite is a UI Framework which is built on top of Tailwind CSS. It's a collection of design elements, components, and layouts, helping to build pixel-perfect responsive websites and apps faster and easier. Flowbite can be used with all of the popular frameworks (React, Svelte, Vue, etc), or with no framework at all.
 
-- **Astro**: Astro builds fast content sites, powerful web applications, dynamic server APIs, and everything in-between; pages are pre-rendered on the server so adding extra frameworks and large libraries will only slow users if hydrated to client for interactivity (using `client:load`, etc). AstroNot is built on Astro v3, which offers a host of new powerful features including `View Transitions` and enhanced `Image Optimization`.
+- **Astro**: Astro builds fast content sites, powerful web applications, dynamic server APIs, and everything in-between; pages are pre-rendered on the server so adding extra frameworks and large libraries will only slow users if hydrated to client for interactivity (using `client:load`, etc). AstroNot is built on Astro v5, which offers a host of new powerful features including enhanced `View Transitions` and improved `Image Optimization`.
 
 - **Svelte**: Svelte describes itself as "cybernetically enhanced web apps". Svelte is not just a front-end UI framework, but also a compiler - which means that deployed web applications can remain lightweight and fast, without large Javascript bundle sizes required of other frameworks such as React. Svelte pairs perfectly with Astro and `nanostores`.
 
@@ -55,12 +55,19 @@ AstroNot includes `pnpm` out of the box, and supports `bun`! Feel free to replac
 - Tag support: Syncs tags with your posts, including color!
 - Automatically generate Table of Content based on document. Supports nested headings.
 - Images optimized based on view resolution at build time. High resolution images will be converted to the best format and size for the layout.
+- **Enhanced Notion Integration**: Optional integration with multiple Notion databases for dynamic content:
+  - Projects database for showcasing your work
+  - Services database for displaying your offerings
+  - Testimonials database for client feedback
+  - Work Experience database for your professional history
+  - About page content database for your personal information
 
 ## ⚙️ Notion Setup
 
-- [ Clone this Notion CMS starter template](https://jsonmartin.notion.site/aea5cd29dea84e77b14f2f7c769eeb61?v=57943f457a0b44cfbcac2aaf75d2fa38&pvs=4)
+- [Clone this Notion CMS starter template](https://jsonmartin.notion.site/aea5cd29dea84e77b14f2f7c769eeb61?v=57943f457a0b44cfbcac2aaf75d2fa38&pvs=4)
 - Create a Notion "internal" integration and get the API secret key
 - Copy the database ID from the cloned Database _(open in browser; the database ID is in the URL for the database on Notion's website, before the `?v=` and after the last `/`)_
+- For enhanced Notion integration, see the [notion-setup.md](notion-setup.md) file for detailed instructions on setting up additional databases
 
 ## 🚀 Installation
 
@@ -117,6 +124,20 @@ AstroNot includes `pnpm` out of the box, and supports `bun`! Feel free to replac
 Start by replacing with your own content & design. Create new pages by adding a new `.astro` file to `/src/pages`!
 _Note: With Astro, components will not ship any Javascript to client unless `client:load` or `client:only` are used for interactivity._
 
+## 🔄 Configuration Files
+
+AstroNot now includes configuration files for various components of the website:
+
+- `src/config/about.ts`: Configuration for the about page content
+- `src/config/contact.ts`: Configuration for the contact form
+- `src/config/email.ts`: Configuration for email functionality
+- `src/config/hero.ts`: Configuration for the homepage hero section
+- `src/config/resume.ts`: Configuration for the resume timeline
+- `src/config/services.ts`: Configuration for the services section
+- `src/config/testimonials.ts`: Configuration for the testimonials section
+
+These configuration files make it easy to customize the content of your website without having to modify the components directly. They also serve as fallbacks when Notion integration is not set up or when a specific Notion database ID is not provided.
+
 ## Performance
 
 - AstroNot receives a **100** on Lighthouse Desktop and **99** for Lighthouse Mobile tests on sample Blog Posts:
@@ -133,11 +154,12 @@ _Note: With Astro, components will not ship any Javascript to client unless `cli
 │   └── pages/
 │       └── posts/   <-- Notion content lives here
 │   ├── components/
+│   ├── config/      <-- Configuration files
+│   ├── helpers/     <-- Helper functions
 │   ├── layouts/
-│   │   └── Layout.svelte
-│   │   └── PostLayout.svelte
-│   │   └── _DarkMode.svelte
-│   │   └── _Header.svelte
+│   │   └── Layout.astro
+│   │   └── PostLayout.astro
+│   │   └── _Navbar.svelte
 │   │   └── _Footer.svelte
 └── package.json
 ```

@@ -16,7 +16,7 @@ module.exports = {
 		extend: {
 			colors: {
 				primary: { // This color is actually called "astronaut"! https://icolorpalette.com/color/astronaut-blue
-					50: '#8688D5',
+					50: '#444',
 					100: '#7779CF',
 					200: '#595BC5',
 					300: '#4042B5',

@@ -2,10 +2,18 @@
 import { ViewTransitions } from "astro:transitions";
 import Navbar from "./_Navbar.svelte";
 import Footer from "./_Footer.svelte";
-import HyperDark from "../components/HyperDark/HyperDark.svelte";
-import ChromeNotification from "./_ChromeNotification.svelte";
+import { layoutStore } from "../stores/layout";
+import { getImage } from "astro:assets";
+import { postImageImport } from "../helpers/images.mjs";
 
-const { title } = Astro.props;
+const { title, description, cover } = Astro.props;
+let layout = layoutStore;
+let optimizedCoverImage: any = null;
+
+if (cover) {
+  const { default: dynamicImg } = await postImageImport(cover);
+  optimizedCoverImage = await getImage({ src: dynamicImg, width: 1920, height: 1080 });
+}
 ---
 
 <html lang="en">
@@ -15,7 +23,7 @@ const { title } = Astro.props;
     <meta charset="UTF-8" />
     <meta
       name="description"
-      content="AstroNot is a fully customizable site builder powered by Astro & Notion. Publish directly from Notion with total control over the website and design!"
+      content="Transforming ideas into powerful, scalable digital solutions by blending creativity with technical expertise. "
     />
     <meta name="viewport" content="width=device-width" />
     <meta name="generator" content={Astro.generator} />
@@ -45,6 +53,22 @@ const { title } = Astro.props;
     </style>
 
     <ViewTransitions />
+    <style>
+      @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+      @keyframes fadeOut {
+        from { opacity: 1; }
+        to { opacity: 0; }
+      }
+      .transition-opacity {
+        animation: fadeIn 0.5s ease-in-out;
+      }
+      .transition-opacity-out {
+        animation: fadeOut 0.5s ease-in-out;
+      }
+    </style>
 
     <script is:inline>
       const colorTheme = localStorage.getItem("color-theme");
@@ -56,14 +80,14 @@ const { title } = Astro.props;
   <body
     class="align-center flex h-screen w-screen flex-col overflow-x-hidden overflow-y-scroll bg-white dark:bg-gray-900 dark:text-white"
   >
-    <HyperDark client:idle />
+    <!-- <HyperDark client:idle /> -->
     <Navbar client:load />
 
     <div class="flex-grow">
       <slot />
     </div>
 
-    <ChromeNotification client:idle />
+    <!-- <ChromeNotification client:idle /> -->
     <Footer client:load />
   </body>
 </html>

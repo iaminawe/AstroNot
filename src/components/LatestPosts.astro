@@ -2,12 +2,18 @@
 import { Image, getImage } from "astro:assets";
 import { postImageImport } from "../helpers/images.mjs";
 
-const latestPosts = (await Astro.glob("../pages/posts/*.mdx"))
-  .sort(
-    (a: any, b: any) =>
-      new Date(b.frontmatter.publish_date) -
-      new Date(a.frontmatter.publish_date),
-  )
+// Get all posts and handle missing publish_date
+const allPosts = await Astro.glob("../pages/posts/*.mdx");
+
+// Filter and sort posts safely
+const latestPosts = allPosts
+  .filter(post => post.frontmatter && typeof post.frontmatter === 'object')
+  .sort((a, b) => {
+    // Use a default date if publish_date is missing
+    const dateA = a.frontmatter.publish_date ? new Date(a.frontmatter.publish_date).getTime() : 0;
+    const dateB = b.frontmatter.publish_date ? new Date(b.frontmatter.publish_date).getTime() : 0;
+    return dateB - dateA;
+  })
   .slice(0, 4);
 
 const { fullWidth = true, animated = false } = Astro.props;
@@ -28,68 +34,83 @@ const { fullWidth = true, animated = false } = Astro.props;
     <div class="grid gap-12 sm:grid-cols-2 lg:grid-cols-4">
       {
         latestPosts.map(async (post) => {
-          const { title, cover, slug, id, reading_time, description } =
-            post.frontmatter;
-          let imageFilePath = (await postImageImport(cover)).default;
-
+          // Safely extract frontmatter properties with defaults
+          const frontmatter = post.frontmatter || {};
+          const title = frontmatter.title || "Untitled Post";
+          const cover = frontmatter.cover;
+          const slug = frontmatter.slug || "";
+          const id = frontmatter.id;
+          const reading_time = frontmatter.reading_time || "1 min read";
+          const description = frontmatter.description || "";
+          
           let coverImageSrc = "";
           let preloadCoverImageSrc = "";
           let preloadCoverImageMobileSrc = "";
 
           if (cover) {
-            coverImageSrc = (
-              await getImage({
-                src: imageFilePath,
-                width: 452,
-              })
-            ).src;
+            try {
+              const imageFilePath = (await postImageImport(cover)).default;
+              
+              coverImageSrc = (
+                await getImage({
+                  src: imageFilePath,
+                  width: 452,
+                })
+              ).src;
 
-            preloadCoverImageSrc = (
-              await getImage({
-                src: imageFilePath,
-                width: 1920,
-                height: 1080,
-              })
-            ).src;
+              preloadCoverImageSrc = (
+                await getImage({
+                  src: imageFilePath,
+                  width: 1920,
+                  height: 1080,
+                })
+              ).src;
 
-            preloadCoverImageMobileSrc = (
-              await getImage({
-                src: imageFilePath,
-                width: 720,
-                height: 480,
-              })
-            ).src;
+              preloadCoverImageMobileSrc = (
+                await getImage({
+                  src: imageFilePath,
+                  width: 720,
+                  height: 480,
+                })
+              ).src;
+            } catch (error) {
+              console.error(`Error processing image for ${title}:`, error);
+            }
           }
 
           return (
             <article class="max-w-xs">
-              {cover && (
+              {cover && coverImageSrc && (
                 <>
                   <a href={`/posts/${slug}`}>
                     <img
                       src={coverImageSrc}
                       class="mb-5 max-h-[127px] rounded-lg object-cover"
-                      alt="Image 1"
+                      alt={`${title} image`}
                       width={452}
                       style={
-                        animated
+                        animated && id
                           ? `view-transition-name: cover-image-${id}; contain: layout;`
                           : ""
                       }
                     />
                   </a>
 
-                  <link rel="prefetch" href={preloadCoverImageSrc} as="image" />
-                  <link
-                    rel="prefetch"
-                    href={preloadCoverImageMobileSrc}
-                    as="image"
-                  />
+                  {preloadCoverImageSrc && (
+                    <link rel="prefetch" href={preloadCoverImageSrc} as="image" />
+                  )}
+                  {preloadCoverImageMobileSrc && (
+                    <link
+                      rel="prefetch"
+                      href={preloadCoverImageMobileSrc}
+                      as="image"
+                    />
+                  )}
                 </>
               )}
               <div
                 style={
-                  animated
+                  animated && id
                     ? `view-transition-name: cover-title-${id}; contain: layout;`
                     : ""
                 }
@@ -98,13 +119,13 @@ const { fullWidth = true, animated = false } = Astro.props;
                   <a href={`/posts/${slug}`}>{title}</a>
                 </h2>
                 <p class="mb-4 text-gray-500 dark:text-gray-400">
-                  {(description !== "undefined" && description) || ""}
+                  {description && description !== "undefined" ? description : ""}
                 </p>
                 <a
                   href={`/posts/${slug}`}
                   class="inline-flex items-center font-medium text-primary-600 underline underline-offset-4 hover:no-underline dark:text-secondary-500"
                 >
-                  Read in {reading_time.replace(" read", "")}
+                  Read in {reading_time ? reading_time.replace(" read", "") : "1 min"}
                 </a>
               </div>
             </article>

@@ -4,7 +4,7 @@
   import Tag from "./Tag.svelte";
 
   export let tagsList = []; // Contains a list of all tags from Notion
-
+  console.log(tagsList);
   let selected = [];
 
   $: tags = tagsList

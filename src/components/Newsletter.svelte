@@ -12,7 +12,7 @@
 
 <Section>
   <Newsletter>
-    <svelte:fragment slot="h2">Sign up for the newsletter</svelte:fragment>
+    <svelte:fragment slot="h2">Sign up for my newsletter</svelte:fragment>
     <p
       class="mx-auto mb-8 max-w-2xl font-light text-gray-500 dark:text-gray-400 sm:text-xl md:mb-12"
     >

@@ -1,0 +1,60 @@
+---
+import { Image, getImage } from "astro:assets";
+import { postImageImport } from "../helpers/images.mjs";
+import CaseStudiesCarousel from "./CaseStudiesCarousel.svelte";
+
+// Get all posts
+const allPosts = await Astro.glob("../pages/posts/*.mdx");
+
+// Filter posts that have the "Article" tag
+const projectPosts = await Promise.all(
+  allPosts
+    .filter((post) => {
+      const { tags } = post.frontmatter;
+      
+      // Check if post has the Article tag
+      const hasArticleTag = tags && tags.some(tag => 
+        tag.name && tag.name === "Article"
+      );
+      
+      return hasArticleTag;
+    })
+    .sort(
+      (a, b) =>
+        new Date(b.frontmatter.publish_date).getTime() -
+        new Date(a.frontmatter.publish_date).getTime()
+    )
+    .slice(0, 3) // Get top 3 most recent project posts
+    .map(async (post) => {
+      const { title, cover, slug, description } = post.frontmatter;
+      
+      // Process the cover image
+      let coverImageSrc = "";
+      if (cover) {
+        const imageFilePath = (await postImageImport(cover)).default;
+        coverImageSrc = (
+          await getImage({
+            src: imageFilePath,
+            width: 1200,
+            height: 600
+          })
+        ).src;
+      }
+      
+      // Return the processed post data
+      return {
+        title,
+        description: description || "",
+        coverImage: coverImageSrc,
+        url: `/posts/${slug}`
+      };
+    })
+);
+---
+
+{/* Preload images for better performance in Safari */}
+{projectPosts.map((post) => (
+  <link rel="preload" href={post.coverImage} as="image" />
+))}
+
+<CaseStudiesCarousel client:load projectPosts={projectPosts} />

@@ -1,0 +1,296 @@
+---
+import { getImage } from "astro:assets";
+import Layout from "../layouts/Layout.astro";
+import Tags from "../components/Tags.astro";
+import { postImageImport } from "../helpers/images.mjs";
+import { Alert } from "flowbite-svelte";
+import { PenSolid } from "flowbite-svelte-icons";
+import { fetchProjects } from "../helpers/notion.js";
+
+const POSTS_PATH = "posts";
+const COVER_IMG_ASPECT_RATIO = "13/9"; // TODO: Expose as variable
+
+// Check if we should fetch from Notion
+const shouldFetchFromNotion = import.meta.env.VITE_PROJECTS_DB_ID && 
+                             import.meta.env.VITE_PROJECTS_DB_ID !== 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX';
+
+// Initialize projects array
+let projects = [];
+
+// Fetch projects from Notion if database ID is provided, otherwise use empty array
+if (shouldFetchFromNotion) {
+  try {
+    const notionProjects = await fetchProjects();
+    if (notionProjects && notionProjects.length > 0) {
+      projects = notionProjects;
+    }
+  } catch (error) {
+    console.error("Error fetching projects from Notion:", error);
+  }
+}
+
+// Also load posts with "Article" tag for backward compatibility
+const posts = await Astro.glob("./posts/*.mdx");
+const articlePosts = posts.filter(post =>
+  post?.frontmatter?.tags?.some(tag => tag.name === "Article")
+);
+
+// Combine projects from Notion with article posts
+// In the future, all projects should come from Notion
+
+---
+
+<Layout title="Projects">
+  <main class="">
+    <section class="">
+      <div class="mx-auto max-w-screen-2xl px-4 py-8 lg:px-6 lg:py-16">
+        <div class="mx-auto mb-4 max-w-screen-sm text-center lg:mb-8">
+          <h1
+            class="mb-4 text-4xl font-extrabold tracking-tight text-gray-900 dark:text-white lg:text-5xl"
+          >
+            Projects
+          </h1>
+          <h2
+            class="font-light text-gray-500 dark:text-gray-400 max-[375px]:text-xs sm:text-xl lg:text-2xl"
+          >
+            Websites, AI Agents, Design & Animation
+          </h2>
+        </div>
+
+        <!-- {showTagsFilter && <TagsFilter tagsList={tagsList} client:load />} -->
+
+        <div
+          class="mt-8 grid items-center gap-8 md:grid-cols-2 lg:mt-16 xl:grid-cols-3"
+        >
+          {/* Notion Projects */}
+          {projects.map(async (project) => {
+            let coverImageSrc = "";
+            let preloadCoverImageSrc = "";
+            let preloadCoverImageMobileSrc = "";
+
+            if (project.coverImage) {
+              try {
+                // For external images from Notion
+                coverImageSrc = project.coverImage;
+                preloadCoverImageSrc = project.coverImage;
+                preloadCoverImageMobileSrc = project.coverImage;
+              } catch (error) {
+                console.error(`Error processing image for ${project.title}:`, error);
+              }
+            }
+
+            return (
+              <a
+                href={project.url || "#"}
+                target={project.url ? "_blank" : "_self"}
+                class="post-link-container contents"
+              >
+                <article class="h-fit transform rounded-lg border border-gray-200 bg-white shadow-md transition duration-100 ease-in dark:border-gray-700 dark:bg-gray-800 sm:hover:scale-[102%] lg:hover:scale-105">
+                  {project.coverImage && (
+                    <div>
+                      <img
+                        class={`mb-1 h-auto w-full rounded-md rounded-b-none object-cover`}
+                        style={`aspect-ratio: ${COVER_IMG_ASPECT_RATIO}`}
+                        src={coverImageSrc}
+                        alt={project.title}
+                      />
+                      {preloadCoverImageSrc && (
+                        <link rel="prefetch" href={preloadCoverImageSrc} as="image" />
+                      )}
+                      {preloadCoverImageMobileSrc && (
+                        <link rel="prefetch" href={preloadCoverImageMobileSrc} as="image" />
+                      )}
+                    </div>
+                  )}
+                  <div class="p-4">
+                    {project.tags && project.tags.length > 0 && (
+                      <Tags tags={project.tags} />
+                    )}
+
+                    <h2 class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
+                      {project.title}
+                    </h2>
+
+                    <p class="mb-4 whitespace-pre-line font-light text-gray-500 dark:text-gray-400">
+                      {project.description}
+                    </p>
+
+                    {/* Author Section */}
+                    <div class="flex items-center space-x-3">
+                      <img
+                        class="h-11 w-11 rounded-full"
+                        src="/images/portrait.webp"
+                        alt="Gregg's Avatar"
+                      />
+                      <div class="font-medium dark:text-white">
+                        <div>Gregg Coppen</div>
+                        <div class="text-sm font-normal text-gray-500 dark:text-gray-400">
+                          <span>Project</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </article>
+              </a>
+            );
+          })}
+
+          {/* Article Posts (for backward compatibility) */}
+          {articlePosts.map(async (post) => {
+            const { cover, title } = post?.frontmatter;
+            const dateStr = post.frontmatter.publish_date 
+              ? new Date(post.frontmatter.publish_date).toLocaleString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric",
+                })
+              : "";
+
+            let optimizedCoverImage: any = null;
+            let coverImageSrc: string = "";
+            let preloadCoverImageSrc: string = "";
+            let preloadCoverImageMobileSrc: string = "";
+
+            if (cover) {
+              try {
+                const imageFilePath = (await postImageImport(cover)).default;
+
+                optimizedCoverImage = await getImage({
+                  src: imageFilePath,
+                  width: 1400,
+                });
+
+                coverImageSrc = (
+                  await getImage({
+                    src: imageFilePath,
+                    width: 1400,
+                  })
+                ).src;
+
+                preloadCoverImageSrc = (
+                  await getImage({
+                    src: imageFilePath,
+                    width: 1920,
+                    height: 1080,
+                  })
+                ).src;
+
+                preloadCoverImageMobileSrc = (
+                  await getImage({
+                    src: imageFilePath,
+                    width: 720,
+                    height: 480,
+                  })
+                ).src;
+
+                coverImageSrc = (optimizedCoverImage as any).src;
+              } catch (error) {
+                console.error(`Error processing image for ${title}:`, error);
+              }
+            }
+
+            return (
+              <a
+                href={`/${POSTS_PATH}/${post.frontmatter.slug}`}
+                class={
+                  "post-link-container contents " +
+                  post.frontmatter.tags
+                    .map((tag) => `post-link-tag-${tag.id}`)
+                    .join(" ")
+                }
+              >
+                <article class="h-fit transform rounded-lg border border-gray-200 bg-white shadow-md transition duration-100 ease-in dark:border-gray-700 dark:bg-gray-800 sm:hover:scale-[102%] lg:hover:scale-105">
+                  <div
+                    style={`view-transition-name: cover-image-${post.frontmatter.id};`}
+                  >
+                    {post.frontmatter.status !== "published" && (
+                      <Alert color="yellow">
+                        <PenSolid slot="icon" class="h-4 w-4" />
+                        Edit this <span class="font-extrabold">
+                          draft
+                        </span>{" "}
+                        post in{" "}
+                        <a
+                          href="notion.so"
+                          target="blank"
+                          class="font-semibold"
+                        >
+                          Notion
+                        </a>
+                      </Alert>
+                    )}
+
+                    {cover && coverImageSrc && (
+                      <>
+                        <img
+                          class={`mb-1 h-auto w-full rounded-md rounded-b-none object-cover`}
+                          style={`aspect-ratio: ${COVER_IMG_ASPECT_RATIO}`}
+                          src={coverImageSrc}
+                          alt="cover"
+                        />
+
+                        <link
+                          rel="prefetch"
+                          href={preloadCoverImageSrc}
+                          as="image"
+                        />
+
+                        <link
+                          rel="prefetch"
+                          href={preloadCoverImageMobileSrc}
+                          as="image"
+                        />
+                      </>
+                    )}
+                  </div>
+                  <div
+                    class="p-4"
+                    style={`view-transition-name: cover-title-${post.frontmatter.id};`}
+                  >
+                    <Tags tags={post.frontmatter.tags} />
+
+                    <h2 class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
+                      {post.frontmatter.title}
+                    </h2>
+
+                    <p
+                      class="mb-4 whitespace-pre-line font-light text-gray-500 dark:text-gray-400"
+                      set:html={
+                        post.frontmatter.description !== "undefined"
+                          ? post.frontmatter.description
+                          : ""
+                      }
+                    />
+
+                    {/* Author Section */}
+                    <div class="flex items-center space-x-3">
+                      <img
+                        class="h-11 w-11 rounded-full"
+                        src="/images/portrait.webp"
+                        alt="Gregg's Avatar"
+                      />
+                      <div class="font-medium dark:text-white">
+                        <div>Gregg Coppen</div>
+                        <div class="text-sm font-normal text-gray-500 dark:text-gray-400">
+                          <span
+                            class={
+                              !post.frontmatter.publish_date ? "hidden" : ""
+                            }
+                          >
+                            <span>{dateStr}</span>
+                            <span> · </span>
+                          </span>
+                          <span>{post.frontmatter.reading_time}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </article>
+              </a>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  </main>
+</Layout>

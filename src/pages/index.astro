@@ -2,15 +2,23 @@
 import Layout from "../layouts/Layout.astro";
 import Newsletter from "../components/Newsletter.svelte";
 import Features from "./home/_Features.svelte";
+import Logos from "./home/_Logos.svelte";
 import FeatureHero from "./home/_FeatureHero.svelte";
+import ServicesMatrix from "../components/ServicesMatrix.svelte";
 import LatestPosts from "../components/LatestPosts.astro";
+import CaseStudiesCarouselWrapper from "../components/CaseStudiesCarouselWrapper.astro";
+import Testimonials from "../components/Testimonials.svelte";
 ---
 
-<Layout title="AstroNot: Astro + Notion based site builder">
+<Layout title="Gregg Coppen | AI Consulting, Design, Development">
   <main class="bg-transparent">
     <div class="w-full">
       <FeatureHero client:load />
-      <Features client:load />
+      <!-- <Logos client:load /> -->
+      <!-- <Features client:load /> -->
+      <ServicesMatrix client:load />
+      <CaseStudiesCarouselWrapper />
+      <Testimonials limit={6} client:load />
       <LatestPosts fullWidth={false} animated={true} />
       <Newsletter client:load />
     </div>

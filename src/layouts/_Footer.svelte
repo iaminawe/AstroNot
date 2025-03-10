@@ -38,7 +38,7 @@
           <a
             class="flex-none text-xl font-semibold text-gray-100"
             href="/"
-            aria-label="Brand">AstroNot</a
+            aria-label="Brand">Gregg Coppen</a
           >
         </div>
         <div
@@ -52,12 +52,12 @@
             <FooterLink href="/about">About</FooterLink>
             <FooterLink href="/contact">Contact</FooterLink>
           </FooterLinkGroup>
-          <FooterCopyright
+          <!-- <FooterCopyright
             href="https://opensource.org/license/mit/"
             by="AstroNot 🚀🌚&nbsp;"
             copyrightMessage="Open Source & Free Forever ❤️"
             spanClass="text-xs text-grey-900"
-          />
+          /> -->
         </div>
 
         <div class="mt-4 flex items-center justify-center space-x-6 sm:mt-0">
