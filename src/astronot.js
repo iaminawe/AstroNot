@@ -21,7 +21,7 @@ console.log(`Syncing Published Only: ${isPublished}`)
 
 // Load ENV Variables
 config();
-if (!process.env.NOTION_KEY || !process.env.DATABASE_ID || !process.env.AUTHOR_DB_ID) throw new Error("Missing Notion .env data")
+if (!process.env.NOTION_KEY || !process.env.DATABASE_ID) throw new Error("Missing Notion .env data")
 const NOTION_KEY = process.env.NOTION_KEY;
 const DATABASE_ID = process.env.DATABASE_ID; // TODO: Import from ENV
 const AUTHOR_DB_ID = process.env.AUTHOR_DB_ID; // New Author DB ID
@@ -165,16 +165,57 @@ console.info("Successfully synced posts with Notion")
 
 // Fetch Author Data
 async function syncAuthor() {
-  const { results } = await notion.databases.query({
-    database_id: AUTHOR_DB_ID,
-    filter: { property: "Active", checkbox: { equals: true } }
-  });
-  return results.map(author => ({
-    name: author.properties.Name.title[0].plain_text,
-    bio: author.properties.Bio.rich_text[0].plain_text,
-    avatar: author.properties.Avatar.files[0].file.url
-  }));
+  // Check if AUTHOR_DB_ID is provided
+  if (!AUTHOR_DB_ID) {
+    console.warn("AUTHOR_DB_ID not provided in .env file. Using default author data.");
+    return [{
+      name: "Gregg Coppen",
+      bio: "Human in the Loop, Designer, Developer, AI Consultant",
+      avatar: "/images/portrait.webp"
+    }];
+  }
+  
+  try {
+    const { results } = await notion.databases.query({
+      database_id: AUTHOR_DB_ID,
+      filter: { property: "Active", checkbox: { equals: true } }
+    });
+    
+    if (results.length === 0) {
+      console.warn("No active author found in Notion database. Using default author data.");
+      return [{
+        name: "Gregg Coppen",
+        bio: "Human in the Loop, Designer, Developer, AI Consultant",
+        avatar: "/images/portrait.webp"
+      }];
+    }
+    
+    return results.map(author => ({
+      name: author.properties.Name.title[0].plain_text,
+      bio: author.properties.Bio.rich_text[0].plain_text,
+      avatar: author.properties.Avatar.files[0].file.url
+    }));
+  } catch (error) {
+    console.error("Error fetching author data from Notion:", error);
+    console.warn("Using default author data as fallback.");
+    return [{
+      name: "Gregg Coppen",
+      bio: "Human in the Loop, Designer, Developer, AI Consultant",
+      avatar: "/images/portrait.webp"
+    }];
+  }
 }
 
-const authorData = await syncAuthor();
-console.info("Successfully synced author data:", authorData);
+let authorData;
+try {
+  authorData = await syncAuthor();
+  console.info("Successfully synced author data:", authorData);
+} catch (error) {
+  console.error("Error syncing author data:", error);
+  authorData = [{
+    name: "Gregg Coppen",
+    bio: "Human in the Loop, Designer, Developer, AI Consultant",
+    avatar: "/images/portrait.webp"
+  }];
+  console.info("Using default author data:", authorData);
+}
