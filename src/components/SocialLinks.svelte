@@ -1,7 +1,4 @@
 <script>
-  import { onMount } from 'svelte';
-  import { fetchSocialLinks } from "../helpers/notion.js";
-  
   // Import Flowbite icons
   import {
     FacebookSolid,
@@ -16,6 +13,9 @@
     BehanceSolid,
     MediumSolid
   } from "flowbite-svelte-icons";
+  
+  // Import social links from static data
+  import { socialLinks as staticSocialLinks } from "../data/index.js";
   
   // Import social links from config file as fallback
   import { aboutContent } from "../config/about";
@@ -59,32 +59,31 @@
     TiktokSolid,
     DribbbleSolid,
     BehanceSolid,
-    MediumSolid
+    MediumSolid,
+    // Add mappings for lowercase names from Notion
+    github: GithubSolid,
+    linkedin: LinkedinSolid,
+    twitter: TwitterSolid,
+    facebook: FacebookSolid,
+    instagram: InstagramSolid,
+    youtube: YoutubeSolid,
+    tiktok: TiktokSolid,
+    discord: DiscordSolid,
+    dribbble: DribbbleSolid,
+    behance: BehanceSolid,
+    medium: MediumSolid,
+    // Special case for X (Twitter)
+    x: TwitterSolid,
+    X: TwitterSolid
   };
   
-  // Use config social links as initial value
-  let socialLinks = aboutContent.socialLinks;
+  // Use static data or fallback to config
+  const socialLinks = staticSocialLinks.length > 0 
+    ? staticSocialLinks 
+    : aboutContent.socialLinks;
   
-  // Fetch social links from Notion if available
-  onMount(async () => {
-    try {
-      // Check if we should fetch from Notion
-      const socialLinksDbId = import.meta.env.VITE_SOCIAL_LINKS_DB_ID;
-      const shouldFetchFromNotion = socialLinksDbId && 
-                                   socialLinksDbId !== 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX';
-      
-      if (shouldFetchFromNotion) {
-        const notionSocialLinks = await fetchSocialLinks();
-        if (notionSocialLinks && notionSocialLinks.length > 0) {
-          socialLinks = notionSocialLinks;
-        }
-      }
-    } catch (error) {
-      console.error("Error fetching social links from Notion:", error);
-      // Fallback to config social links
-      socialLinks = aboutContent.socialLinks;
-    }
-  });
+  // Log data source for debugging
+  console.log("Social links source:", staticSocialLinks.length > 0 ? "STATIC" : "CONFIG");
 </script>
 
 <div class={containerClass}>

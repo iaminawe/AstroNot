@@ -1,20 +1,29 @@
 [
   {
-    "id": "sample-social-link-1",
-    "name": "Twitter",
-    "url": "https://twitter.com/example",
-    "icon": "TwitterOutline",
+    "id": "1b28b10a-276e-8036-9a56-de1b3081c7a2",
+    "name": "Github",
+    "url": "https://github.com/iaminawe",
+    "icon": "github",
     "iconType": "component",
-    "order": 0,
+    "order": 1,
     "active": true
   },
   {
-    "id": "sample-social-link-2",
-    "name": "GitHub",
-    "url": "https://github.com/example",
-    "icon": "GitHubOutline",
+    "id": "1b28b10a-276e-80eb-8d41-dc4adfff5ea1",
+    "name": "Twitter",
+    "url": "twitter.com/skabenga",
+    "icon": "X",
     "iconType": "component",
-    "order": 1,
+    "order": 2,
+    "active": true
+  },
+  {
+    "id": "1b28b10a-276e-8000-9211-f7e4e143bfa6",
+    "name": "Linkedin",
+    "url": "https://www.linkedin.com/in/greggcoppen/",
+    "icon": "linkedin",
+    "iconType": "component",
+    "order": 3,
     "active": true
   }
 ]

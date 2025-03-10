@@ -43,6 +43,13 @@ try {
   console.warn('Failed to load author data:', error);
 }
 
+let aboutContent = {};
+try {
+  aboutContent = (await import('./about.json')).default;
+} catch (error) {
+  console.warn('Failed to load about data:', error);
+}
+
 // Export data for use in components
 export { 
   testimonials, 
@@ -50,5 +57,6 @@ export {
   services, 
   socialLinks, 
   workExperience, 
-  author 
+  author,
+  aboutContent
 };

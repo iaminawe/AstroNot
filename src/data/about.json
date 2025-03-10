@@ -1,0 +1,45 @@
+{
+  "title": "About me",
+  "paragraphs": [
+    "Updated My journey began in Durban South Africa where I studied graphic design before moving to the UK to start a company called \"iaminawe.\" Since then I've worked across continents balancing creativity and technical know-how to deliver projects that make a real impact.",
+    "\nI specialize in web development front-end development (JavaScript and React) Drupal theming design systems (Figma and Framer) branding and animation. Over the years I've worked with startups large organizations nonprofits school districts and businesses constantly evolving my skills. Whether building complex e-commerce sites managing multi-site Drupal networks or pivoting to AI consulting and implementation my goal remains the same: to create powerful intuitive solutions that address real-world needs.",
+    "\nI'm currently exploring AI's transformative potential in education government and business helping organizations strategize and implement agent platforms tailored to their unique needs. Outside of work I enjoy snowboarding hiking cold plunging and spending time with my family and our black Labrador Juno."
+  ],
+  "profileImage": {
+    "src": "https://prod-files-secure.s3.us-west-2.amazonaws.com/5fbbb4c2-2ced-4743-8413-ea48615b5809/61df6086-1a27-40e8-b1fd-d146d8dfdd87/gregg-portrait.webp?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=ASIAZI2LB466VUB477GA%2F20250310%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20250310T230850Z&X-Amz-Expires=3600&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEE8aCXVzLXdlc3QtMiJIMEYCIQCe4MOTdftxr5TIhW11BItNLUyy%2Ba69cYtHaSFMdX2BNgIhAJYp1aF6ds4e%2F24KxknXGnAi2afVV2bvKxCGdMRkoKUoKogECJf%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEQABoMNjM3NDIzMTgzODA1IgzB81uSwA0py4LysSYq3AMrDU9RrM6u1YkN17NYbtFBP0mcdF7phkhhIBkXki%2FL%2ByTddZua23fEsuKoW30wCtUjPnj3apommNOoHqnwKxFt3%2Fa6wDeVcstBRNZMufr6hqkwg3J3gt2Q4OjmLzj%2BA%2BQuG3vQNPK%2FVMKIX0wxSAwxM3GtxYFw9J8MTfgfS63O9Ebtex%2FhVeahATuOm90mMUoaMyPSCzDE076WPNFYHoAZCV%2FxQxPgyjJeCXl9q1kF4bQQ%2BRyuqSDdEPQ9B%2BgK1Wh9BdPLH3%2F6vk2Q4j1xnvxahUWAg7XtaPm0jOLLebSFhYV%2FvbniNrUdAi2xEguWznYnTushmQQ96Wkoh8aBe1NIXDA2rRNGKw5BJdHlZ3jCWTyYVtixcyefv%2FN3hfk9r0C5RjVoMiS3%2B186NBMAI6HmeRAgwgQ6foyx%2FlQi%2Fxt49sVl416NF8u%2BATIXQvz99EEji2s0wBo2zWEh49X1lrTpRERjYmRz7YUNLJzLIyvJ2HPC85pX8EUAblfjLtIZ1LpYgwDMUkFua7WrhauC7OVpBhaFeZsWscF0a0J8xRfWGNFcSKJVSApLsJrzPE9I2Edy8%2FpOQ8PCwpTpI7VFLZ4iLl1gcRs0NBOckSxKh8%2B4mwdPO0lBuYNp8Of0VjCfyr2%2BBjqkAcqLZnBMSMynMbUebANr5gcOczEtMEXiSHMSVuewl51mg6oOoemtFzZuVZ9TYisQEgjsIN2FqD326BUwiqf40xn8gMxY%2FGveDrgdoMiKNwRZ2Pr0wKuPbYSicg6biIj%2FxuX99UAktLu1cWac6LhS%2BwQeJNa40ug4flz6qV%2Bq591dptTWW93vWQu1xSlPQsQ4%2FUC7KqZ4ahDYiB2obvsjQTJ1RXhF&X-Amz-Signature=82cf244fb5ff3e674927335e89dc042349503b0f70cdb9185b3fd0b53fb31965&X-Amz-SignedHeaders=host&x-id=GetObject",
+    "alt": "Gregg Coppen Portrait"
+  },
+  "socialLinks": [
+    {
+      "id": "1b28b10a-276e-8036-9a56-de1b3081c7a2",
+      "name": "Github",
+      "url": "https://github.com/iaminawe",
+      "icon": "github",
+      "iconType": "component",
+      "order": 1,
+      "active": true
+    },
+    {
+      "id": "1b28b10a-276e-80eb-8d41-dc4adfff5ea1",
+      "name": "Twitter",
+      "url": "twitter.com/skabenga",
+      "icon": "X",
+      "iconType": "component",
+      "order": 2,
+      "active": true
+    },
+    {
+      "id": "1b28b10a-276e-8000-9211-f7e4e143bfa6",
+      "name": "Linkedin",
+      "url": "https://www.linkedin.com/in/greggcoppen/",
+      "icon": "linkedin",
+      "iconType": "component",
+      "order": 3,
+      "active": true
+    }
+  ],
+  "email": {
+    "address": "gregg@iaminawe.com",
+    "label": "Send me an E-mail"
+  }
+}

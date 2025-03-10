@@ -2,42 +2,36 @@
 import Layout from "../layouts/Layout.astro";
 import Timeline from "../components/Timeline.svelte";
 import { Badge } from "flowbite-svelte";
-import { fetchAboutContent, fetchWorkExperience } from "../helpers/notion.js";
 import { aboutContent as configAboutContent } from "../config/about";
 import { resumeData } from "../config/resume";
 import SocialLinks from "../components/SocialLinks.svelte";
 
-// Check if we should fetch from Notion
-const shouldFetchAboutFromNotion = import.meta.env.VITE_ABOUT_DB_ID && 
-                                  import.meta.env.VITE_ABOUT_DB_ID !== 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX';
-const shouldFetchWorkFromNotion = import.meta.env.VITE_WORK_EXPERIENCE_DB_ID && 
-                                 import.meta.env.VITE_WORK_EXPERIENCE_DB_ID !== 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX';
+// Import static data (generated during build)
+// Use try-catch to handle the case where the file doesn't exist yet
+let staticAboutContent = null;
+let staticWorkExperience = [];
 
-// Fetch data from Notion or use config fallbacks
-let aboutContent = configAboutContent;
-let workExperience = resumeData.workExperience;
-
-if (shouldFetchAboutFromNotion) {
-  try {
-    const notionAboutContent = await fetchAboutContent();
-    if (notionAboutContent && Object.keys(notionAboutContent).length > 0) {
-      aboutContent = notionAboutContent;
-    }
-  } catch (error) {
-    console.error("Error fetching about content from Notion:", error);
-  }
+try {
+  // Import from the central data index file
+  const dataModule = await import("../data/index.js");
+  staticAboutContent = dataModule.aboutContent || null;
+  staticWorkExperience = dataModule.workExperience || [];
+} catch (error) {
+  console.warn("Could not import static data:", error.message);
 }
 
-if (shouldFetchWorkFromNotion) {
-  try {
-    const notionWorkExperience = await fetchWorkExperience();
-    if (notionWorkExperience && notionWorkExperience.length > 0) {
-      workExperience = notionWorkExperience;
-    }
-  } catch (error) {
-    console.error("Error fetching work experience from Notion:", error);
-  }
-}
+// Use static data or fallback to config
+let aboutContent = staticAboutContent && Object.keys(staticAboutContent).length > 0 
+  ? staticAboutContent 
+  : configAboutContent;
+
+let workExperience = staticWorkExperience.length > 0 
+  ? staticWorkExperience 
+  : resumeData.workExperience;
+
+// Log data sources for debugging
+console.log("About content source:", staticAboutContent ? "STATIC" : "CONFIG");
+console.log("Work experience source:", staticWorkExperience.length > 0 ? "STATIC" : "CONFIG");
 
 // Use education from resume data or fallback
 const education = resumeData.education || [
