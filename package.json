@@ -41,7 +41,7 @@
     "date-fns": "^3.6.0",
     "dotenv": "^16.4.5",
     "flowbite": "^2.3.0",
-    "flowbite-svelte": "^0.47.4",
+    "flowbite-svelte": "^0.48.4",
     "flowbite-svelte-blocks": "^1.1.1",
     "flowbite-typography": "^1.0.3",
     "image-type": "^5.2.0",
@@ -70,7 +70,7 @@
   },
   "devDependencies": {
     "@tailwindcss/typography": "^0.5.13",
-    "flowbite-svelte-icons": "^1.6.1",
+    "flowbite-svelte-icons": "^2.0.3",
     "prettier": "^3.2.5",
     "prettier-plugin-astro": "^0.13.0",
     "prettier-plugin-tailwindcss": "^0.5.14",

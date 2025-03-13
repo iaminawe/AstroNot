@@ -8,10 +8,7 @@
     InstagramSolid,
     LinkedinSolid,
     YoutubeSolid,
-    TiktokSolid,
-    DribbbleSolid,
-    BehanceSolid,
-    MediumSolid
+    DribbbleSolid
   } from "flowbite-svelte-icons";
   
   // Import social links from static data
@@ -56,10 +53,7 @@
     InstagramSolid,
     LinkedinSolid,
     YoutubeSolid,
-    TiktokSolid,
     DribbbleSolid,
-    BehanceSolid,
-    MediumSolid,
     // Add mappings for lowercase names from Notion
     github: GithubSolid,
     linkedin: LinkedinSolid,
@@ -67,11 +61,8 @@
     facebook: FacebookSolid,
     instagram: InstagramSolid,
     youtube: YoutubeSolid,
-    tiktok: TiktokSolid,
     discord: DiscordSolid,
     dribbble: DribbbleSolid,
-    behance: BehanceSolid,
-    medium: MediumSolid,
     // Special case for X (Twitter)
     x: TwitterSolid,
     X: TwitterSolid
