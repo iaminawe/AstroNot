@@ -66,6 +66,38 @@ AstroNot includes `pnpm` out of the box, and supports `bun`! Feel free to replac
   - Home Hero database for customizing the homepage hero section
   - Site Settings database for managing global site settings (title, logo, favicon, meta tags, etc.)
 
+### 🆕 New Features
+
+1. **Improved Social Media Integration**
+   - Streamlined social media icons using flowbite-svelte-icons v2.0.3
+   - Support for GitHub, Twitter/X, and LinkedIn icons
+   - Automatic icon validation during build process
+
+2. **Enhanced Image Processing**
+   - Automatic image optimization and WebP conversion
+   - Multiple responsive sizes generated for each image
+   - Improved error handling for Notion image downloads
+   - Automatic retry mechanism for failed image downloads
+
+3. **Build System Improvements**
+   - Comprehensive build process documentation
+   - Pre-build validation checks
+   - Post-build verification steps
+   - Automatic content synchronization with Notion
+   - Improved error reporting and logging
+
+4. **Developer Experience**
+   - New build instructions in memory-bank
+   - Clearer error messages for common issues
+   - Streamlined deployment process
+   - Better handling of environment variables
+
+5. **Performance Optimizations**
+   - Improved image loading and optimization
+   - Better handling of social media icons
+   - Reduced bundle size through icon optimization
+   - Enhanced build-time optimizations
+
 ## ⚙️ Notion Setup
 
 - [Clone this Notion CMS starter template](https://jsonmartin.notion.site/aea5cd29dea84e77b14f2f7c769eeb61?v=57943f457a0b44cfbcac2aaf75d2fa38&pvs=4)
@@ -80,6 +112,22 @@ AstroNot includes `pnpm` out of the box, and supports `bun`! Feel free to replac
 - Move `.env.example` to `.env` and add your Notion API key and database ID
 - Run `pnpm sync` to sync Notion Content for the first time
 - Run `pnpm dev` to start development server
+
+### Deployment with Nixpacks
+
+AstroNot includes a `nixpacks.toml` configuration file for easy deployment on platforms that support Nixpacks (like Railway). The configuration:
+
+1. Sets up the environment with Node.js and pnpm
+2. Installs dependencies
+3. Runs the generate command to build the site
+4. Serves the static files from the dist folder
+
+To deploy:
+1. Ensure your environment variables (NOTION_KEY, DATABASE_ID) are set on your hosting platform
+2. Push your code - the nixpacks configuration will automatically:
+   - Install dependencies
+   - Run the build process
+   - Start serving your site from the dist folder
 
 ### Install to an existing project
 

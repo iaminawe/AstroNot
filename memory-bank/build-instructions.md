@@ -63,3 +63,52 @@
 - Images are optimized and converted to WebP format automatically
 - Social media icons must be available in flowbite-svelte-icons v2.0.3
 - Consider updating Astro.glob usage to import.meta.glob in future updates
+
+## Deployment with Nixpacks
+
+AstroNot includes a `nixpacks.toml` configuration file for deployment on platforms that support Nixpacks (like Railway).
+
+### Configuration Details
+
+```toml
+[phases.setup]
+nixPkgs = ["nodejs", "pnpm"]
+
+[phases.install]
+cmds = ["pnpm install"]
+
+[phases.build]
+cmds = [
+  "pnpm run generate"
+]
+
+[start]
+cmd = "npx serve dist"
+```
+
+### What This Does
+
+1. **Setup Phase**: Installs Node.js and pnpm in the build environment
+2. **Install Phase**: Installs project dependencies using pnpm
+3. **Build Phase**: Runs the generate command which:
+   - Syncs Notion content
+   - Processes images
+   - Builds the static site
+4. **Start Phase**: Serves the static files from the dist folder
+
+### Deployment Steps
+
+1. Ensure environment variables are set on your hosting platform:
+   - NOTION_KEY
+   - DATABASE_ID
+
+2. Push your code to trigger the deployment:
+   - Nixpacks will automatically handle the build process
+   - The site will be served from the dist folder
+   - Static files are served efficiently
+
+### Common Issues
+
+- Missing environment variables will cause build failures
+- Large Notion databases may require increased build timeout settings
+- Image processing may require additional memory allocation

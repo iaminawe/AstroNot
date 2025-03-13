@@ -1,0 +1,13 @@
+[phases.setup]
+nixPkgs = ["nodejs", "pnpm"]
+
+[phases.install]
+cmds = ["pnpm install"]
+
+[phases.build]
+cmds = [
+  "pnpm run generate"
+]
+
+[start]
+cmd = "npx serve dist"
