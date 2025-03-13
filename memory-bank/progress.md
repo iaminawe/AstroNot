@@ -82,6 +82,7 @@
 - **Enhanced Notion Integration**: The project now supports multiple Notion databases for dynamic content, with configuration files as fallbacks.
 - **Notion Integration Verified**: All Notion integrations have been tested and confirmed to be working correctly, including services, projects, testimonials, and author information.
 - **Markdown Rendering Improved**: Enhanced Markdown rendering for projects using the marked library to ensure consistent content display across different page types.
+- **Notion Column Support**: Implemented support for Notion columns across the site, ensuring proper rendering of column-based content from Notion in posts, projects, and the home hero section.
 
 ## Known Issues
 - **Notion API Limits**: Need to monitor and manage the Notion API usage to avoid hitting rate limits and usage quotas.

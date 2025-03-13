@@ -31,8 +31,52 @@ try {
   notion = null;
 }
 
-// Initialize NotionToMarkdown
-const n2m = new NotionToMarkdown({ notionClient: notion });
+// Initialize NotionToMarkdown with column support
+const n2m = new NotionToMarkdown({ 
+  notionClient: notion,
+  customBlocks: {
+    column_list: (block) => {
+      return { 
+        type: "column_list",
+        open: '<div class="notion-columns">',
+        close: '</div>'
+      };
+    },
+    column: (block) => {
+      // Get the column ratio if available
+      const ratio = block.column?.width || 1;
+      return {
+        type: "column",
+        open: `<div class="notion-column" style="flex: ${ratio}">`,
+        close: '</div>'
+      };
+    },
+    image: (block) => {
+      // Special handling for images
+      const { type } = block;
+      const value = block[type];
+      
+      // Get image URL based on type
+      let imageUrl = '';
+      if (value.type === 'external') {
+        imageUrl = value.external.url;
+      } else if (value.type === 'file') {
+        imageUrl = value.file.url;
+      }
+      
+      // Get caption if available
+      const caption = value.caption && value.caption.length > 0 
+        ? value.caption[0].plain_text 
+        : '';
+      
+      // Return image tag with proper component import
+      return {
+        type: 'image',
+        parent: `<Image src="${imageUrl}" alt="${caption}" />`,
+      };
+    }
+  }
+});
 
 // Rate limiting helper
 const THROTTLE_DURATION = 334; // ms - Notion API has a rate limit of 3 requests per second

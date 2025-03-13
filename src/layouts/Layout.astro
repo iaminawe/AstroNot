@@ -68,6 +68,30 @@ if (cover) {
       blockquote code {
         color: white !important;
       }
+      
+      /* Notion Column Support */
+      .notion-columns {
+        display: flex;
+        gap: 2rem;
+        margin: 1.5rem 0;
+      }
+      .notion-column {
+        flex: 1;
+        min-width: 200px;
+      }
+      .notion-column h4 {
+        margin-top: 0;
+        font-size: 1.25rem;
+        font-weight: 600;
+      }
+      @media (max-width: 768px) {
+        .notion-columns {
+          flex-direction: column;
+        }
+        .notion-column {
+          margin-bottom: 1.5rem;
+        }
+      }
     </style>
 
     <style>

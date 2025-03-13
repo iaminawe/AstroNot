@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { Button } from "flowbite-svelte";
   import { ArrowRightOutline } from "flowbite-svelte-icons";
+  import { marked } from 'marked';
   
   // Accept props from parent
   export let heroContent = {};
@@ -78,4 +79,12 @@
     </div>
     </div>
   </div>
+  
+  {#if heroContent.content}
+    <div class="max-w-screen-xl px-4 mx-auto">
+      <div class="prose dark:prose-invert mt-12 format format-sm sm:format-base lg:format-lg format-blue dark:format-invert max-w-none">
+        {@html heroContent.content}
+      </div>
+    </div>
+  {/if}
 </section>

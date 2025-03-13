@@ -4,6 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { config } from 'dotenv';
 import { Client } from "@notionhq/client";
+import { NotionToMarkdown } from "notion-to-md";
 
 // Load environment variables from .env file
 config();
@@ -15,16 +16,64 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const OUTPUT_DIR = path.join(__dirname, '..', 'data');
 const OUTPUT_FILE = path.join(OUTPUT_DIR, 'hero.json');
 
-// Initialize Notion client
+// Initialize Notion client and NotionToMarkdown
 const NOTION_KEY = process.env.VITE_NOTION_KEY;
 console.log("VITE_NOTION_KEY:", NOTION_KEY ? "Present (length: " + NOTION_KEY.length + ")" : "Missing");
 
 let notion = null;
+let n2m = null;
 try {
   if (NOTION_KEY) {
     console.log("Initializing Notion client...");
     notion = new Client({
       auth: NOTION_KEY
+    });
+    
+    // Initialize NotionToMarkdown with column support
+    n2m = new NotionToMarkdown({ 
+      notionClient: notion,
+      customBlocks: {
+        column_list: (block) => {
+          return { 
+            type: "column_list",
+            open: '<div class="notion-columns">',
+            close: '</div>'
+          };
+        },
+        column: (block) => {
+          // Get the column ratio if available
+          const ratio = block.column?.width || 1;
+          return {
+            type: "column",
+            open: `<div class="notion-column" style="flex: ${ratio}">`,
+            close: '</div>'
+          };
+        },
+        image: (block) => {
+          // Special handling for images
+          const { type } = block;
+          const value = block[type];
+          
+          // Get image URL based on type
+          let imageUrl = '';
+          if (value.type === 'external') {
+            imageUrl = value.external.url;
+          } else if (value.type === 'file') {
+            imageUrl = value.file.url;
+          }
+          
+          // Get caption if available
+          const caption = value.caption && value.caption.length > 0 
+            ? value.caption[0].plain_text 
+            : '';
+          
+          // Return image tag with proper component import
+          return {
+            type: 'image',
+            parent: `<Image src="${imageUrl}" alt="${caption}" />`,
+          };
+        }
+      }
     });
     console.log("Notion client initialized successfully");
   } else {
@@ -33,6 +82,7 @@ try {
 } catch (error) {
   console.error("Error initializing Notion client:", error);
   notion = null;
+  n2m = null;
 }
 
 /**
@@ -80,6 +130,7 @@ async function fetchHomeHeroFromNotion() {
     console.log("Hero page properties:", heroPage.properties);
     
     const heroContent = {
+      id: heroPage.id,
       title: heroPage.properties.title?.title[0]?.plain_text || "",
       subtitle: heroPage.properties.subtitle?.rich_text[0]?.plain_text || "",
       description: heroPage.properties.introParagraph?.rich_text[0]?.plain_text || "",
@@ -120,19 +171,92 @@ async function generateHeroData() {
     }
     
     // Fetch home hero content from Notion
-    const heroContent = await fetchHomeHeroFromNotion();
+    const heroData = await fetchHomeHeroFromNotion();
     
-    if (!heroContent) {
+    if (!heroData) {
       console.warn('No home hero content found in Notion database');
       return;
     }
     
-    console.log(`Found home hero content in Notion database`);
+    // Fetch page content blocks
+    const { results: blocks } = await notion.blocks.children.list({
+      block_id: heroData.id
+    });
     
-    // Write the home hero content to a JSON file
-    fs.writeFileSync(OUTPUT_FILE, JSON.stringify(heroContent, null, 2));
+    // Add support for heading blocks
+    n2m.setCustomTransformer("heading_1", async (block) => {
+      const text = block.heading_1.rich_text.map(t => t.plain_text).join('');
+      return `<h1>${text}</h1>`;
+    });
     
-    console.log(`Home hero data file generated successfully at ${OUTPUT_FILE}`);
+    n2m.setCustomTransformer("heading_2", async (block) => {
+      const text = block.heading_2.rich_text.map(t => t.plain_text).join('');
+      return `<h2>${text}</h2>`;
+    });
+    
+    n2m.setCustomTransformer("heading_3", async (block) => {
+      const text = block.heading_3.rich_text.map(t => t.plain_text).join('');
+      return `<h3>${text}</h3>`;
+    });
+    
+    // Add support for image blocks
+    n2m.setCustomTransformer("image", async (block) => {
+      const { image } = block;
+      const imageUrl = image?.file?.url || image?.external?.url;
+      const caption = image?.caption?.[0]?.plain_text || '';
+      
+      return `<img src="${imageUrl}" alt="${caption}" class="rounded-lg shadow-xl" />`;
+    });
+    
+    // Add support for column blocks
+    n2m.setCustomTransformer("column_list", async (block) => {
+      const { id, type } = block;
+      const columnBlocks = await notion.blocks.children.list({ block_id: id });
+      
+      let columnsHtml = '<div class="notion-columns">';
+      
+      for (const columnBlock of columnBlocks.results) {
+        if (columnBlock.type === 'column') {
+          const columnChildrenBlocks = await notion.blocks.children.list({ block_id: columnBlock.id });
+          const columnMdblocks = await n2m.blocksToMarkdown(columnChildrenBlocks.results);
+          const { parent: columnMdString } = n2m.toMarkdownString(columnMdblocks);
+          
+          columnsHtml += `<div class="notion-column">${columnMdString}</div>`;
+        }
+      }
+      
+      columnsHtml += '</div>';
+      
+      return columnsHtml;
+    });
+    
+    // Convert blocks to markdown
+    const mdblocks = await n2m.blocksToMarkdown(blocks);
+    const { parent: mdString } = n2m.toMarkdownString(mdblocks);
+    
+    console.log("Markdown content:", mdString);
+    
+    const finalData = {
+      ...heroData,
+      content: mdString
+    };
+
+    console.log(`Processed home hero content with Markdown`);
+
+    // Write to src/data/hero.json
+    fs.writeFileSync(OUTPUT_FILE, JSON.stringify(finalData, null, 2));
+    console.log(`Hero data file generated successfully at ${OUTPUT_FILE}`);
+
+    // Write to public/data/home-hero-content.json
+    const publicDataDir = path.join(__dirname, '../../public/data');
+    if (!fs.existsSync(publicDataDir)) {
+      fs.mkdirSync(publicDataDir, { recursive: true });
+    }
+    fs.writeFileSync(
+      path.join(publicDataDir, 'home-hero-content.json'),
+      JSON.stringify(finalData, null, 2)
+    );
+    console.log(`Hero data file generated successfully at ${path.join(publicDataDir, 'home-hero-content.json')}`);
   } catch (error) {
     console.error('Error generating home hero data file:', error);
   }

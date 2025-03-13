@@ -37,7 +37,50 @@ const notion = new Client({
 });
 
 // Notion Custom Block Transform START
-const n2m = new NotionToMarkdown({ notionClient: notion });
+const n2m = new NotionToMarkdown({ 
+  notionClient: notion,
+  customBlocks: {
+    column_list: (block) => {
+      return { 
+        type: "column_list",
+        open: '<div class="notion-columns">',
+        close: '</div>'
+      };
+    },
+    column: (block) => {
+      // Get the column ratio if available
+      const ratio = block.column?.width || 1;
+      return {
+        type: "column",
+        open: `<div class="notion-column" style="flex: ${ratio}">`,
+        close: '</div>'
+      };
+    }
+  }
+});
+
+// Add support for column blocks
+n2m.setCustomTransformer("column_list", async (block) => {
+  const { id, type } = block;
+  const columnBlocks = await notion.blocks.children.list({ block_id: id });
+  
+  let columnsHtml = '<div class="notion-columns">';
+  
+  for (const columnBlock of columnBlocks.results) {
+    if (columnBlock.type === 'column') {
+      const columnChildrenBlocks = await notion.blocks.children.list({ block_id: columnBlock.id });
+      const columnMdblocks = await n2m.blocksToMarkdown(columnChildrenBlocks.results);
+      const { parent: columnMdString } = n2m.toMarkdownString(columnMdblocks);
+      
+      columnsHtml += `<div class="notion-column">${columnMdString}</div>`;
+    }
+  }
+  
+  columnsHtml += '</div>';
+  
+  return columnsHtml;
+});
+
 n2m.setCustomTransformer("embed", async (block) => {
   const { embed } = block;
   if (!embed?.url) return "";
