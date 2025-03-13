@@ -11,3 +11,20 @@ cmds = [
 
 [start]
 cmd = "npx serve dist"
+
+[variables]
+BUILD_TIME = [
+    "NOTION_KEY",
+    "VITE_NOTION_KEY",
+    "DATABASE_ID",
+    "AUTHOR_DB_ID",
+    "VITE_AUTHOR_DB_ID",
+    "VITE_PROJECTS_DB_ID",
+    "VITE_SERVICES_DB_ID",
+    "VITE_TESTIMONIALS_DB_ID",
+    "VITE_WORK_EXPERIENCE_DB_ID",
+    "VITE_ABOUT_DB_ID",
+    "VITE_SOCIAL_LINKS_DB_ID",
+    "VITE_HOME_HERO_DB_ID",
+    "VITE_SITE_SETTINGS_DB_ID"
+]
