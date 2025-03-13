@@ -2,7 +2,6 @@
   import { onMount } from 'svelte';
   import { Button } from "flowbite-svelte";
   import { ArrowRightOutline } from "flowbite-svelte-icons";
-  import { marked } from 'marked';
   
   // Accept props from parent
   export let heroContent = {};

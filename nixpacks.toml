@@ -5,9 +5,7 @@ nixPkgs = ["nodejs", "pnpm"]
 cmds = ["pnpm install"]
 
 [phases.build]
-cmds = [
-  "pnpm run generate"
-]
+cmds = ["pnpm run generate"]
 
 [start]
 cmd = "npx serve dist"

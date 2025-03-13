@@ -150,6 +150,9 @@ importers:
       prettier-plugin-tailwindcss:
         specifier: ^0.5.14
         version: 0.5.14(prettier-plugin-astro@0.13.0)(prettier-plugin-svelte@3.2.3(prettier@3.2.5)(svelte@5.20.1))(prettier@3.2.5)
+      prettier-plugin-toml:
+        specifier: ^2.0.2
+        version: 2.0.2(prettier@3.2.5)
       tailwindcss:
         specifier: ^3.4.3
         version: 3.4.3
@@ -1308,6 +1311,12 @@ packages:
     resolution: {integrity: sha512-ADGcJ8dX21dVVHIwTRgzrcunY6YY9uSlAHHGVKvkA+vLc5qLwEszvKts40lx7z0qc4clpjclwLeK5rVCV2P/uw==}
     peerDependencies:
       tailwindcss: '>=3.0.0 || insiders'
+
+  '@taplo/core@0.1.1':
+    resolution: {integrity: sha512-BG/zLGf5wiNXGEVPvUAAX/4ilB3PwDUY2o0MV0y47mZbDZ9ad9UK/cIQsILat3bqbPJsALVbU6k3cskNZ3vAQg==}
+
+  '@taplo/lib@0.4.0-alpha.2':
+    resolution: {integrity: sha512-DV/Re3DPVY+BhBtLZ3dmP4mP6YMLSsgq9qGLXwOV38lvNF/fBlgvQswzlXmzCEefL/3q2eMoefZpOI/+GLuCNA==}
 
   '@tokenizer/token@0.3.0':
     resolution: {integrity: sha512-OvjF+z51L3ov0OyAU0duzsYuvO01PH7x4t6DJx+guahgTnBHkhJdG7soQeTSFLWN3efnHyibZ4Z8l2EuWwJN3A==}
@@ -2699,6 +2708,12 @@ packages:
         optional: true
       prettier-plugin-svelte:
         optional: true
+
+  prettier-plugin-toml@2.0.2:
+    resolution: {integrity: sha512-tUIIhyfdVX5DMsLGKX/2qaEwi3W48OkUSR7XC91PRI5jFzhexmaYWkrSP1Xh/eWUcEc0TVMQenM3lB09xLQstQ==}
+    engines: {node: '>=16.0.0'}
+    peerDependencies:
+      prettier: ^3.0.3
 
   prettier@3.2.5:
     resolution: {integrity: sha512-3/GWa9aOC0YeD7LUfvOG2NiDyhOWRvt1k+rcKhOuYnMY24iiCphgneUfJDyFXd6rZCAnuLBv6UeAULtrhT/F4A==}
@@ -4975,6 +4990,12 @@ snapshots:
       postcss-selector-parser: 6.0.10
       tailwindcss: 3.4.3
 
+  '@taplo/core@0.1.1': {}
+
+  '@taplo/lib@0.4.0-alpha.2':
+    dependencies:
+      '@taplo/core': 0.1.1
+
   '@tokenizer/token@0.3.0': {}
 
   '@types/acorn@4.0.6':
@@ -6764,6 +6785,11 @@ snapshots:
     optionalDependencies:
       prettier-plugin-astro: 0.13.0
       prettier-plugin-svelte: 3.2.3(prettier@3.2.5)(svelte@5.20.1)
+
+  prettier-plugin-toml@2.0.2(prettier@3.2.5):
+    dependencies:
+      '@taplo/lib': 0.4.0-alpha.2
+      prettier: 3.2.5
 
   prettier@3.2.5: {}
 
