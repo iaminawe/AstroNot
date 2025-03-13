@@ -29,6 +29,9 @@ const AUTHOR_DB_ID = process.env.AUTHOR_DB_ID; // New Author DB ID
 const POSTS_PATH = `src/pages/posts`;
 const THROTTLE_DURATION = 334; // ms Notion API has a rate limit of 3 requests per second, so ensure that is not exceeded
 
+console.log("Notion API Base URL:", process.env.NOTION_API_URL);
+console.log("Notion Database ID:", process.env.NOTION_DATABASE_ID);
+
 const notion = new Client({
   auth: NOTION_KEY,
   config: {
