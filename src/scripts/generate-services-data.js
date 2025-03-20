@@ -36,6 +36,49 @@ try {
 }
 
 /**
+ * Fetch category details from Notion
+ * @param {string} categoryId - The ID of the category to fetch
+ * @returns {Promise<Object>} The category details
+ */
+async function fetchCategoryDetails(categoryId) {
+  try {
+    const response = await notion.pages.retrieve({ page_id: categoryId });
+    const parentId = response.properties.ParentCategory?.relation[0]?.id;
+    let parentDetails = null;
+    
+    if (parentId) {
+      const parentResponse = await notion.pages.retrieve({ page_id: parentId });
+      parentDetails = {
+        id: parentId,
+        name: parentResponse.properties.Name?.title[0]?.plain_text || 'Uncategorized',
+        displayOrder: parentResponse.properties.displayOrder?.number || 0
+      };
+    }
+    
+    return {
+      id: categoryId,
+      name: response.properties.Name?.title[0]?.plain_text || 'Uncategorized',
+      intro: response.properties.Intro?.rich_text[0]?.plain_text || '',
+      footnotes: response.properties.Footnotes?.rich_text[0]?.plain_text || '',
+      displayOrder: response.properties.displayOrder?.number || 0,
+      parent: parentDetails,
+      isTopLevel: response.properties.IsTopLevel?.checkbox || false
+    };
+  } catch (error) {
+    console.error(`Error fetching category details for ID ${categoryId}:`, error);
+    return {
+      id: categoryId,
+      name: 'Uncategorized',
+      intro: '',
+      footnotes: '',
+      displayOrder: 0,
+      parent: null,
+      isTopLevel: false
+    };
+  }
+}
+
+/**
  * Fetch services from Notion database
  * @returns {Promise<Array>} Array of service objects
  */
@@ -76,7 +119,6 @@ async function fetchServicesFromNotion() {
       database_id: servicesDbId,
     });
     
-    console.log("Notion query response:", response);
     const { results } = response;
     console.log("Notion query results count:", results.length);
 
@@ -85,11 +127,12 @@ async function fetchServicesFromNotion() {
       return [];
     }
 
-    const services = [];
+    const topLevelCategories = new Map(); // Map to store top-level categories
+    const categoryDetailsCache = new Map(); // Cache category details
     
     for (const service of results) {
       try {
-        console.log("Processing service:", service.id);
+        console.log("\nProcessing service:", service.id);
         
         // Check if the service has the expected properties
         if (!service.properties) {
@@ -98,14 +141,56 @@ async function fetchServicesFromNotion() {
         }
         
         // Extract service properties with detailed logging
-        let category, title, description, icon, url, order;
+        let categoryId, title, description, icon, url, displayOrder;
         
         try {
-          category = service.properties.category?.select?.name;
-          console.log("Category:", category);
+          // Get category ID from relation
+          categoryId = service.properties.Category?.relation[0]?.id;
+          if (!categoryId) {
+            console.error("No category relation found");
+            continue;
+          }
+          
+          // Get category details (from cache or fetch new)
+          let categoryDetails;
+          if (categoryDetailsCache.has(categoryId)) {
+            categoryDetails = categoryDetailsCache.get(categoryId);
+          } else {
+            categoryDetails = await fetchCategoryDetails(categoryId);
+            categoryDetailsCache.set(categoryId, categoryDetails);
+          }
+          
+          console.log("Category Details:", categoryDetails);
+          
+          // Get or create top-level category
+          const topLevelCategory = categoryDetails.parent || categoryDetails;
+          if (!topLevelCategories.has(topLevelCategory.id)) {
+            topLevelCategories.set(topLevelCategory.id, {
+              name: topLevelCategory.name,
+              icon: "",
+              displayOrder: topLevelCategory.displayOrder,
+              children: new Map() // Map to store subcategories
+            });
+          }
+          
+          // Get or create subcategory
+          const subcategoryId = categoryDetails.parent ? categoryId : null;
+          if (subcategoryId) {
+            const subcategories = topLevelCategories.get(topLevelCategory.id).children;
+            if (!subcategories.has(subcategoryId)) {
+              subcategories.set(subcategoryId, {
+                name: categoryDetails.name,
+                icon: "",
+                intro: categoryDetails.intro,
+                footnotes: categoryDetails.footnotes,
+                displayOrder: categoryDetails.displayOrder,
+                items: []
+              });
+            }
+          }
         } catch (e) {
-          console.error("ERROR extracting category:", e);
-          category = "Uncategorized";
+          console.error("ERROR extracting Category:", e);
+          continue;
         }
         
         try {
@@ -141,49 +226,53 @@ async function fetchServicesFromNotion() {
         }
         
         try {
-          order = service.properties.order?.number || 0;
-          console.log("Order:", order);
+          displayOrder = service.properties.displayOrder?.number || 0;
+          console.log("Display Order:", displayOrder);
         } catch (e) {
-          console.error("ERROR extracting order:", e);
-          order = 0;
+          console.error("ERROR extracting displayOrder:", e);
+          displayOrder = 0;
         }
         
-        console.log(`Processing service: ${title} (${category})`);
+        const categoryDetails = categoryDetailsCache.get(categoryId);
+        const topLevelCategory = categoryDetails.parent || categoryDetails;
+        const subcategoryId = categoryDetails.parent ? categoryId : null;
         
-        // Find if category already exists
-        let categoryObj = services.find(s => s.name === category);
-        
-        if (!categoryObj) {
-          categoryObj = {
-            name: category,
-            icon: service.properties.categoryIcon?.rich_text[0]?.plain_text || "",
-            items: []
-          };
-          services.push(categoryObj);
+        // Add service to its subcategory
+        if (subcategoryId) {
+          const subcategory = topLevelCategories.get(topLevelCategory.id).children.get(subcategoryId);
+          subcategory.items.push({
+            title,
+            description,
+            icon,
+            url,
+            displayOrder
+          });
         }
         
-        categoryObj.items.push({
-          title,
-          description,
-          icon,
-          url,
-          order
-        });
+        console.log(`\nProcessed service: ${title} (${categoryDetails.name})`);
       } catch (serviceError) {
         console.error("ERROR processing service:", serviceError);
       }
     }
     
-    // Sort items within each category
-    services.forEach(category => {
-      category.items.sort((a, b) => a.order - b.order);
-    });
+    // Convert Map to array and sort everything
+    const servicesArray = Array.from(topLevelCategories.values()).map(category => ({
+      ...category,
+      children: Array.from(category.children.values())
+        .sort((a, b) => a.displayOrder - b.displayOrder)
+        .map(subcategory => ({
+          ...subcategory,
+          items: subcategory.items.sort((a, b) => a.displayOrder - b.displayOrder)
+        }))
+    })).sort((a, b) => a.displayOrder - b.displayOrder);
     
-    console.log("Final services structure:", services);
-    console.log("Services count:", services.length);
-    console.log("Total service items:", services.reduce((count, category) => count + category.items.length, 0));
+    console.log("\nFinal services structure:", JSON.stringify(servicesArray, null, 2));
+    console.log("Services count:", servicesArray.length);
+    console.log("Total service items:", servicesArray.reduce((count, category) => 
+      category.children.reduce((subcount, subcategory) => 
+        subcount + subcategory.items.length, 0), 0));
     
-    return services;
+    return servicesArray;
   } catch (error) {
     console.error("ERROR fetching services from Notion:", error);
     console.error("Error details:", error.message);

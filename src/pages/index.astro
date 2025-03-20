@@ -18,6 +18,7 @@ import { testimonials as configTestimonials } from "../config/testimonials.ts";
 let staticTestimonials = [];
 let staticHeroContent = null;
 let staticServices = [];
+let staticCategories = [];
 let staticSocialLinks = [];
 let staticWorkExperience = [];
 let staticAuthor = null;
@@ -28,6 +29,7 @@ try {
   staticTestimonials = dataModule.testimonials || [];
   staticHeroContent = dataModule.heroContent || null;
   staticServices = dataModule.services || [];
+  staticCategories = dataModule.categories || [];
   staticSocialLinks = dataModule.socialLinks || [];
   staticWorkExperience = dataModule.workExperience || [];
   staticAuthor = dataModule.author || null;
@@ -39,6 +41,7 @@ try {
 console.log("=== DEBUG ENV VARIABLES ===");
 console.log("VITE_NOTION_KEY:", import.meta.env.VITE_NOTION_KEY ? "Present (length: " + import.meta.env.VITE_NOTION_KEY.length + ")" : "Missing");
 console.log("VITE_SERVICES_DB_ID:", import.meta.env.VITE_SERVICES_DB_ID);
+console.log("VITE_CATEGORIES_DB_ID:", import.meta.env.VITE_CATEGORIES_DB_ID);
 console.log("VITE_HOME_HERO_DB_ID:", import.meta.env.VITE_HOME_HERO_DB_ID);
 console.log("VITE_TESTIMONIALS_DB_ID:", import.meta.env.VITE_TESTIMONIALS_DB_ID);
 console.log("=== END DEBUG ===");
@@ -50,6 +53,10 @@ let servicesSource = staticServices.length > 0 ? "STATIC" : "CONFIG";
 
 console.log(`Services source: ${servicesSource}`);
 console.log(`Services count: ${services.length}`);
+
+// Use static categories data
+let categories = staticCategories;
+console.log(`Categories count: ${categories.length}`);
 
 // Use static hero content (generated during build)
 // Fall back to config hero content if static data is not available
@@ -74,7 +81,7 @@ console.log(`Testimonials count: ${testimonials.length}`);
       <FeatureHero heroContent={heroContent} source={heroSource} client:load />
       <!-- <Logos client:load /> -->
       <!-- <Features client:load /> -->
-      <ServicesMatrix services={services} source={servicesSource} client:load />
+      <ServicesMatrix services={services} categories={categories} source={servicesSource} client:load />
       <CaseStudiesCarouselWrapper />
       <Testimonials testimonials={testimonials} source={testimonialsSource} limit={testimonialsLimit} client:load />
       <LatestPosts fullWidth={false} animated={true} />
