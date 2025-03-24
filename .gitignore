@@ -27,3 +27,6 @@ pnpm-debug.log*
 # Code Editors
 .vscode
 .idea
+
+# Image Manifest
+src/data/image-manifest.json
