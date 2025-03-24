@@ -7,6 +7,7 @@ import { parseArgs } from 'node:util';
 import { sanitizeUrl, sanitizeImageString } from './helpers/sanitize.mjs';
 import { hashString, downloadImage } from './helpers/images.mjs';
 import { delay } from './helpers/delay.mjs';
+import { needsSync, updateTimestamp, getCollectionLastSync, updateCollectionTimestamp } from './scripts/notion-timestamp-tracker.js';
 
 // Input Arguments
 const ARGUMENT_OPTIONS = {
@@ -175,21 +176,42 @@ n2m.setCustomTransformer("bookmark", async (block) => {
 // Notion Custom Block Transform END
 
 // Fetch Notion Posts from Database via Notion API
+
+// Get the last sync time for posts
+const lastSyncTime = getCollectionLastSync('posts');
+console.log("Last posts sync time:", lastSyncTime || "Never synced");
+
 const queryParams = {
   database_id: DATABASE_ID,
 }
 
+// Build filter
+let filters = [];
+
+// Add published filter if needed
 if (isPublished) {
-  queryParams.filter = {
-    "and": [
-      {
-        "property": "status",
-        "select": {
-          equals: 'published'
-        }
-      },
-    ]
-  }
+  filters.push({
+    "property": "status",
+    "select": {
+      equals: 'published'
+    }
+  });
+}
+
+// Add last_edited_time filter if we have a last sync time
+if (lastSyncTime) {
+  filters.push({
+    timestamp: "last_edited_time",
+    last_edited_time: {
+      on_or_after: lastSyncTime
+    }
+  });
+  console.log("Filtering for posts updated since:", lastSyncTime);
+}
+
+// Apply filters if we have any
+if (filters.length > 0) {
+  queryParams.filter = filters.length === 1 ? filters[0] : { "and": filters };
 }
 
 const databaseResponse = await notion.databases.query(queryParams);
@@ -222,6 +244,10 @@ const pages = results.map((page) => {
 
 for (let page of pages) {
   console.info("Fetching from Notion & Converting to Markdown: ", `${page.title} [${page.id}]`);
+  
+  // Update the timestamp for this post
+  updateTimestamp('post', page.id, page.last_edited_time);
+  
   const mdblocks = await n2m.pageToMarkdown(page.id);
   const { parent: mdString } = n2m.toMarkdownString(mdblocks);
 
@@ -263,6 +289,9 @@ ${mdString}
   console.debug(`Sleeping for ${THROTTLE_DURATION} ms...\n`)
   await delay(THROTTLE_DURATION); // Need to throttle requests to avoid rate limiting
 }
+
+// Update the collection timestamp after processing all posts
+updateCollectionTimestamp('posts');
 
 console.info("Successfully synced posts with Notion")
 

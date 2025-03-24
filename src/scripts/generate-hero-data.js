@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 import { config } from 'dotenv';
 import { Client } from "@notionhq/client";
 import { NotionToMarkdown } from "notion-to-md";
+import { needsSync, updateTimestamp, getCollectionLastSync, updateCollectionTimestamp } from './notion-timestamp-tracker.js';
 
 // Load environment variables from .env file
 config();
@@ -32,22 +33,64 @@ try {
     // Initialize NotionToMarkdown with column support
     n2m = new NotionToMarkdown({ 
       notionClient: notion,
+      customTransformer: (node) => {
+        if (node.type === 'text') {
+          let text = node.text.content;
+          if (node.annotations.bold) {
+            text = `**${text}**`;
+          }
+          if (node.annotations.italic) {
+            text = `*${text}*`;
+          }
+          return text;
+        }
+        return null;
+      },
       customBlocks: {
-        column_list: (block) => {
-          return { 
-            type: "column_list",
-            open: '<div class="notion-columns">',
-            close: '</div>'
-          };
-        },
-        column: (block) => {
-          // Get the column ratio if available
-          const ratio = block.column?.width || 1;
-          return {
-            type: "column",
-            open: `<div class="notion-column" style="flex: ${ratio}">`,
-            close: '</div>'
-          };
+        column_list: async (block) => {
+          const { id } = block;
+          const columnBlocks = await notion.blocks.children.list({ block_id: id });
+          
+          let columnsHtml = '<div class="notion-columns">';
+          
+          for (const columnBlock of columnBlocks.results) {
+            if (columnBlock.type === 'column') {
+              const columnChildrenBlocks = await notion.blocks.children.list({ block_id: columnBlock.id });
+              let columnContent = '';
+              
+              for (const childBlock of columnChildrenBlocks.results) {
+                if (childBlock.type === 'paragraph' || childBlock.type === 'bulleted_list_item' || childBlock.type === 'numbered_list_item' || childBlock.type.startsWith('heading_')) {
+                  const richText = childBlock[childBlock.type].rich_text;
+                  const formattedText = richText.map(t => {
+                    let content = t.plain_text;
+                    if (t.annotations.bold) {
+                      content = `**${content}**`;
+                    }
+                    if (t.annotations.italic) {
+                      content = `*${content}*`;
+                    }
+                    return content;
+                  }).join('');
+                  
+                  if (childBlock.type === 'bulleted_list_item') {
+                    columnContent += `<li>${formattedText}</li>`;
+                  } else if (childBlock.type === 'numbered_list_item') {
+                    columnContent += `<li>${formattedText}</li>`;
+                  } else if (childBlock.type.startsWith('heading_')) {
+                    const level = childBlock.type.charAt(childBlock.type.length - 1);
+                    columnContent += `<h${level}>${formattedText}</h${level}>`;
+                  } else {
+                    columnContent += `<p>${formattedText}</p>`;
+                  }
+                }
+              }
+              
+              columnsHtml += `<div class="notion-column">${columnContent}</div>`;
+            }
+          }
+          
+          columnsHtml += '</div>';
+          return columnsHtml;
         },
         image: (block) => {
           // Special handling for images
@@ -106,16 +149,38 @@ async function fetchHomeHeroFromNotion() {
   }
 
   try {
+    // Get the last sync time for hero content
+    const lastSyncTime = getCollectionLastSync('hero');
+    console.log("Last hero sync time:", lastSyncTime || "Never synced");
+    
     console.log("Querying Notion database:", homeHeroDbId);
+    
+    let queryFilter = {
+      property: "active",
+      checkbox: {
+        equals: true
+      }
+    };
+    
+    // If we have a last sync time, add a filter for last_edited_time
+    if (lastSyncTime) {
+      queryFilter = {
+        and: [
+          queryFilter,
+          {
+            timestamp: "last_edited_time",
+            last_edited_time: {
+              on_or_after: lastSyncTime
+            }
+          }
+        ]
+      };
+      console.log("Filtering for hero content updated since:", lastSyncTime);
+    }
     
     const { results } = await notion.databases.query({
       database_id: homeHeroDbId,
-      filter: {
-        property: "active",
-        checkbox: {
-          equals: true
-        }
-      },
+      filter: queryFilter,
       page_size: 1
     });
 
@@ -128,6 +193,9 @@ async function fetchHomeHeroFromNotion() {
 
     const heroPage = results[0];
     console.log("Hero page properties:", heroPage.properties);
+    
+    // Get the last edited time for this hero content
+    const lastEditedTime = heroPage.last_edited_time;
     
     const heroContent = {
       id: heroPage.id,
@@ -151,6 +219,13 @@ async function fetchHomeHeroFromNotion() {
     };
     
     console.log("Hero content:", heroContent);
+    
+    // Update the timestamp for this hero content
+    updateTimestamp('hero', heroPage.id, lastEditedTime);
+    
+    // Update the collection timestamp after processing
+    updateCollectionTimestamp('hero');
+    
     return heroContent;
   } catch (error) {
     console.error("Error fetching home hero content from Notion:", error);
@@ -183,22 +258,134 @@ async function generateHeroData() {
       block_id: heroData.id
     });
     
+    console.log('Raw blocks from Notion:', JSON.stringify(blocks, null, 2));
+    
     // Add support for heading blocks
+    // Add support for heading blocks with rich text formatting
     n2m.setCustomTransformer("heading_1", async (block) => {
-      const text = block.heading_1.rich_text.map(t => t.plain_text).join('');
+      const text = block.heading_1.rich_text.map(t => {
+        let content = t.plain_text;
+        if (t.annotations.bold) content = `**${content}**`;
+        if (t.annotations.italic) content = `*${content}*`;
+        return content;
+      }).join('');
       return `<h1>${text}</h1>`;
     });
     
     n2m.setCustomTransformer("heading_2", async (block) => {
-      const text = block.heading_2.rich_text.map(t => t.plain_text).join('');
+      const text = block.heading_2.rich_text.map(t => {
+        let content = t.plain_text;
+        if (t.annotations.bold) content = `**${content}**`;
+        if (t.annotations.italic) content = `*${content}*`;
+        return content;
+      }).join('');
       return `<h2>${text}</h2>`;
     });
     
     n2m.setCustomTransformer("heading_3", async (block) => {
-      const text = block.heading_3.rich_text.map(t => t.plain_text).join('');
+      const text = block.heading_3.rich_text.map(t => {
+        let content = t.plain_text;
+        if (t.annotations.bold) {
+          content = `<b>${content}</b>`;
+        }
+        if (t.annotations.italic) {
+          content = `<i>${content}</i>`;
+        }
+        return content;
+      }).join('');
       return `<h3>${text}</h3>`;
     });
     
+    // Add support for paragraph blocks with rich text formatting
+    n2m.setCustomTransformer("paragraph", async (block) => {
+      const text = block.paragraph.rich_text.map(t => {
+        let content = t.plain_text;
+        if (t.annotations && t.annotations.bold) {
+          content = `**${content}**`;
+        }
+        if (t.annotations && t.annotations.italic) {
+          content = `*${content}*`;
+        }
+        return content;
+      }).join('');
+      
+      return text;
+    });
+    
+    // Add support for bulleted list items with rich text formatting
+    n2m.setCustomTransformer("bulleted_list_item", async (block) => {
+      const text = block.bulleted_list_item.rich_text.map(t => {
+        let content = t.plain_text;
+        if (t.annotations.bold) content = `**${content}**`;
+        if (t.annotations.italic) content = `*${content}*`;
+        return content;
+      }).join('');
+      return `- ${text}`;
+    });
+    
+    // Add support for numbered list items with rich text formatting
+    n2m.setCustomTransformer("numbered_list_item", async (block) => {
+      const text = block.numbered_list_item.rich_text.map(t => {
+        let content = t.plain_text;
+        if (t.annotations.bold) content = `**${content}**`;
+        if (t.annotations.italic) content = `*${content}*`;
+        return content;
+      }).join('');
+      return `<li>${text}</li>`;
+    });
+
+    let isFirstListItem = false;
+    let listOpen = false;
+
+    n2m.setCustomTransformer("bulleted_list_item", async (block) => {
+      const text = block.bulleted_list_item.rich_text.map(t => t.plain_text).join('');
+
+      if (!listOpen) {
+        isFirstListItem = true;
+        listOpen = true;
+        return `<ul><li>${text}</li>`;
+      }
+
+      return `<li>${text}</li>`;
+    });
+
+    let isFirstOrderedListItem = false;
+    let orderedListOpen = false;
+
+    n2m.setCustomTransformer("numbered_list_item", async (block) => {
+      const text = block.numbered_list_item.rich_text.map(t => t.plain_text).join('');
+
+      if (!orderedListOpen) {
+        isFirstOrderedListItem = true;
+        orderedListOpen = true;
+        return `<ol><li>${text}</li>`;
+      }
+
+      return `<li>${text}</li>`;
+    });
+
+    n2m.setCustomTransformer("paragraph", async (block) => {
+      if (listOpen) {
+        listOpen = false;
+        return `</ul><p>${block.paragraph.rich_text.map(t => t.plain_text).join('')}</p>`;
+      }
+      if (orderedListOpen) {
+        orderedListOpen = false;
+        return `</ol><p>${block.paragraph.rich_text.map(t => t.plain_text).join('')}</p>`;
+      }
+      return `<p>${block.paragraph.rich_text.map(t => t.plain_text).join('')}</p>`;
+    });
+
+    n2m.setCustomTransformer("to_do", async (block) => {
+      const text = block.to_do.rich_text.map(t => t.plain_text).join('');
+      return `<li>${text}</li>`;
+    });
+
+    n2m.setCustomTransformer("toggle", async (block) => {
+      const text = block.toggle.rich_text.map(t => t.plain_text).join('');
+      return `<li>${text}</li>`;
+    });
+
     // Add support for image blocks
     n2m.setCustomTransformer("image", async (block) => {
       const { image } = block;

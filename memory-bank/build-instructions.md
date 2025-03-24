@@ -8,13 +8,15 @@
    - Remove any unsupported icons (e.g., TikTok, Medium) to prevent build failures
 
 2. **Notion Integration**
-   - Run `npm run sync:all` before building to ensure all Notion content is up-to-date
+   - Run `npm run sync:notion` or `npm run sync:all` before building to ensure all Notion content is up-to-date
+   - The system uses timestamp tracking to only sync content that has been updated since the last sync
    - This syncs:
      - Published posts
      - Projects
      - Testimonials
      - Hero content
      - Services
+     - Categories
      - Social links
      - Work experience
      - Author data
@@ -59,7 +61,8 @@
 ## Important Notes
 
 - The build process includes both content synchronization and static site generation
-- All Notion content is fetched and processed during build time
+- Notion content is fetched using an efficient timestamp tracking system that only syncs updated content
+- The timestamp tracking system maintains timestamps for both collections and individual items
 - Images are optimized and converted to WebP format automatically
 - Social media icons must be available in flowbite-svelte-icons v2.0.3
 - Consider updating Astro.glob usage to import.meta.glob in future updates

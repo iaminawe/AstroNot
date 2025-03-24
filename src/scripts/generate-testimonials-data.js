@@ -4,6 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { config } from 'dotenv';
 import { Client } from "@notionhq/client";
+import { needsSync, updateTimestamp, getCollectionLastSync, updateCollectionTimestamp } from './notion-timestamp-tracker.js';
 
 // Load environment variables from .env file
 config();
@@ -52,10 +53,38 @@ async function fetchTestimonialsFromNotion() {
   }
 
   try {
+    // Get the last sync time for testimonials
+    const lastSyncTime = getCollectionLastSync('testimonials');
+    console.log("Last testimonials sync time:", lastSyncTime || "Never synced");
+    
     console.log("Querying testimonials database:", testimonialsDbId);
+    
+    let queryFilter = {
+      property: "active",
+      checkbox: {
+        equals: true,
+      },
+    };
+    
+    // If we have a last sync time, add a filter for last_edited_time
+    if (lastSyncTime) {
+      queryFilter = {
+        and: [
+          queryFilter,
+          {
+            timestamp: "last_edited_time",
+            last_edited_time: {
+              on_or_after: lastSyncTime
+            }
+          }
+        ]
+      };
+      console.log("Filtering for testimonials updated since:", lastSyncTime);
+    }
     
     const response = await notion.databases.query({
       database_id: testimonialsDbId,
+      filter: queryFilter
     });
     
     console.log("Testimonials query results count:", response.results.length);
@@ -69,6 +98,9 @@ async function fetchTestimonialsFromNotion() {
     
     for (const testimonial of response.results) {
       try {
+        // Get the last edited time for this testimonial
+        const lastEditedTime = testimonial.last_edited_time;
+        
         // Extract testimonial properties
         const name = testimonial.properties.name?.rich_text?.[0]?.plain_text || "Anonymous";
         
@@ -107,10 +139,16 @@ async function fetchTestimonialsFromNotion() {
         });
         
         console.log(`Processed testimonial: ${name} (${company}): "${quote.substring(0, 30)}..."`);
+        
+        // Update the timestamp for this testimonial
+        updateTimestamp('testimonial', testimonial.id, lastEditedTime);
       } catch (error) {
         console.error("Error processing testimonial:", error);
       }
     }
+    
+    // Update the collection timestamp after processing all testimonials
+    updateCollectionTimestamp('testimonials');
 
     console.log("Final testimonials count:", testimonials.length);
     return testimonials.sort((a, b) => a.order - b.order);

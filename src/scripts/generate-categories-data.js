@@ -4,6 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { config } from 'dotenv';
 import { Client } from "@notionhq/client";
+import { needsSync, updateTimestamp, getCollectionLastSync, updateCollectionTimestamp } from './notion-timestamp-tracker.js';
 
 config();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -30,8 +31,36 @@ async function fetchCategoriesFromNotion() {
   }
 
   try {
+    // Get the last sync time for categories
+    const lastSyncTime = getCollectionLastSync('categories');
+    console.log("Last categories sync time:", lastSyncTime || "Never synced");
+    
+    let queryFilter = {
+      property: "active",
+      checkbox: {
+        equals: true,
+      },
+    };
+    
+    // If we have a last sync time, add a filter for last_edited_time
+    if (lastSyncTime) {
+      queryFilter = {
+        and: [
+          queryFilter,
+          {
+            timestamp: "last_edited_time",
+            last_edited_time: {
+              on_or_after: lastSyncTime
+            }
+          }
+        ]
+      };
+      console.log("Filtering for categories updated since:", lastSyncTime);
+    }
+    
     const response = await notion.databases.query({
       database_id: CATEGORIES_DB_ID,
+      filter: queryFilter,
     });
 
     const categoriesMap = new Map();
@@ -39,6 +68,9 @@ async function fetchCategoriesFromNotion() {
 
     // First pass - collect all categories
     for (const categoryPage of response.results) {
+      // Get the last edited time for this category
+      const lastEditedTime = categoryPage.last_edited_time;
+      
       const props = categoryPage.properties;
       console.log("Category properties:", props);
       const category = {
@@ -54,6 +86,9 @@ async function fetchCategoriesFromNotion() {
       };
       
       categoriesMap.set(categoryPage.id, category);
+      
+      // Update the timestamp for this category
+      updateTimestamp('category', categoryPage.id, lastEditedTime);
     }
 
     // Second pass - build hierarchy
@@ -72,6 +107,9 @@ async function fetchCategoriesFromNotion() {
     // Sort root categories and validate
     const sortedRoots = rootCategories.sort((a, b) => a.displayOrder - b.displayOrder);
     validateHierarchy(categoriesMap);
+    
+    // Update the collection timestamp after processing all categories
+    updateCollectionTimestamp('categories');
 
     return {
       categories: sortedRoots,

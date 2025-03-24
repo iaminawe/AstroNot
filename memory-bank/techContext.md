@@ -24,6 +24,7 @@
 
 ## Technical Constraints
 - **Notion API Limits**: The Notion API has rate limits and usage quotas that need to be managed.
+- **Efficient Data Syncing**: The timestamp tracking system ensures only updated content is fetched from Notion, reducing API calls and sync time.
 - **Performance**: The website needs to be optimized for performance, with fast page loads and smooth navigation transitions.
 - **Security**: The website needs to be secure, with proper authentication, authorization, and data protection measures in place.
 - **Compatibility**: The website needs to be compatible with different browsers and devices.
@@ -59,7 +60,8 @@
 ## Development Workflow
 - **Local Development**: Developers use `pnpm dev` to start the local development server.
 - **Building**: The website is built using `pnpm build` for production.
-- **Syncing Notion Content**: Notion content is synced using `pnpm sync`.
+- **Syncing Notion Content**: Notion content is synced using `npm run sync:notion` or its alias `npm run sync:all`, with timestamp tracking to only sync updated content.
+- **Individual Content Syncing**: Specific content types can be synced individually using commands like `npm run sync:services`, `npm run sync:testimonials`, etc.
 - **Generating Production Build**: The production build is generated using `pnpm generate`.
 
 ## Testing and Quality Assurance

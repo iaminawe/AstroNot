@@ -4,6 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { config } from 'dotenv';
 import { Client } from "@notionhq/client";
+import { needsSync, updateTimestamp, getCollectionLastSync, updateCollectionTimestamp } from './notion-timestamp-tracker.js';
 
 // Load environment variables from .env file
 config();
@@ -113,10 +114,39 @@ async function fetchServicesFromNotion() {
       return [];
     }
     
+    // Get the last sync time for services
+    const lastSyncTime = getCollectionLastSync('services');
+    console.log("Last services sync time:", lastSyncTime || "Never synced");
+    
     // Query the services database
     console.log("Querying Notion database for services...");
+    
+    let queryFilter = {
+      property: "active",
+      checkbox: {
+        equals: true,
+      },
+    };
+    
+    // If we have a last sync time, add a filter for last_edited_time
+    if (lastSyncTime) {
+      queryFilter = {
+        and: [
+          queryFilter,
+          {
+            timestamp: "last_edited_time",
+            last_edited_time: {
+              on_or_after: lastSyncTime
+            }
+          }
+        ]
+      };
+      console.log("Filtering for services updated since:", lastSyncTime);
+    }
+    
     const response = await notion.databases.query({
       database_id: servicesDbId,
+      filter: queryFilter
     });
     
     const { results } = response;
@@ -127,12 +157,16 @@ async function fetchServicesFromNotion() {
       return [];
     }
 
+    const services = [];
     const topLevelCategories = new Map(); // Map to store top-level categories
     const categoryDetailsCache = new Map(); // Cache category details
     
     for (const service of results) {
       try {
         console.log("\nProcessing service:", service.id);
+        
+        // Get the last edited time for this service
+        const lastEditedTime = service.last_edited_time;
         
         // Check if the service has the expected properties
         if (!service.properties) {
@@ -141,7 +175,7 @@ async function fetchServicesFromNotion() {
         }
         
         // Extract service properties with detailed logging
-        let categoryId, title, description, icon, url, displayOrder;
+        let categoryId, title, description, icon, url, displayOrder, active;
         
         try {
           // Get category ID from relation
@@ -233,6 +267,14 @@ async function fetchServicesFromNotion() {
           displayOrder = 0;
         }
         
+        try {
+          active = service.properties.active?.checkbox || false;
+          console.log("Active:", active);
+        } catch (e) {
+          console.error("ERROR extracting active:", e);
+          active = false;
+        }
+
         const categoryDetails = categoryDetailsCache.get(categoryId);
         const topLevelCategory = categoryDetails.parent || categoryDetails;
         const subcategoryId = categoryDetails.parent ? categoryId : null;
@@ -245,15 +287,22 @@ async function fetchServicesFromNotion() {
             description,
             icon,
             url,
-            displayOrder
+            displayOrder,
+            active
           });
         }
         
         console.log(`\nProcessed service: ${title} (${categoryDetails.name})`);
+        
+        // Update the timestamp for this service
+        updateTimestamp('service', service.id, lastEditedTime);
       } catch (serviceError) {
         console.error("ERROR processing service:", serviceError);
       }
     }
+    
+    // Update the collection timestamp after processing all services
+    updateCollectionTimestamp('services');
     
     // Convert Map to array and sort everything
     const servicesArray = Array.from(topLevelCategories.values()).map(category => ({
@@ -262,17 +311,17 @@ async function fetchServicesFromNotion() {
         .sort((a, b) => a.displayOrder - b.displayOrder)
         .map(subcategory => ({
           ...subcategory,
-          items: subcategory.items.sort((a, b) => a.displayOrder - b.displayOrder)
+          items: subcategory.items.filter(item => item.active).sort((a, b) => a.displayOrder - b.displayOrder)
         }))
     })).sort((a, b) => a.displayOrder - b.displayOrder);
     
     console.log("\nFinal services structure:", JSON.stringify(servicesArray, null, 2));
-    console.log("Services count:", servicesArray.length);
+    console.log("Final services count:", servicesArray.length);
     console.log("Total service items:", servicesArray.reduce((count, category) => 
       category.children.reduce((subcount, subcategory) => 
         subcount + subcategory.items.length, 0), 0));
     
-    return servicesArray;
+    return servicesArray.filter(category => category.children.some(subcategory => subcategory.items.some(item => item.active))).sort((a, b) => a.displayOrder - b.displayOrder);
   } catch (error) {
     console.error("ERROR fetching services from Notion:", error);
     console.error("Error details:", error.message);

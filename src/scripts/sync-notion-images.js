@@ -13,6 +13,7 @@ import {
   imageExistsInS3, 
   getS3ImageUrl 
 } from '../helpers/s3.js';
+import { needsSync, updateTimestamp, getCollectionLastSync, updateCollectionTimestamp } from './notion-timestamp-tracker.js';
 
 // Load environment variables from .env file
 config();
@@ -241,11 +242,22 @@ async function processMdxFile(filePath) {
 async function syncNotionImages() {
   console.log(`Starting to sync Notion images (${storageMode.toUpperCase()} mode)...`);
   
+  // Get the last sync time for images
+  const lastSyncTime = getCollectionLastSync('images');
+  console.log("Last images sync time:", lastSyncTime || "Never synced");
+  
+  // Check if we need to sync based on the last sync time
+  // For images, we always sync since we need to check all files for new Notion URLs
+  // But we can use this for logging purposes
+  
   try {
+    let processedFiles = 0;
+    
     // Process JSON files in the data directory
     const jsonFiles = fs.readdirSync(DATA_DIR).filter(file => file.endsWith('.json') && file !== 'image-manifest.json');
     for (const file of jsonFiles) {
       await processJsonFile(path.join(DATA_DIR, file));
+      processedFiles++;
     }
     
     // Process MDX files in the projects directory
@@ -253,6 +265,7 @@ async function syncNotionImages() {
       const mdxFiles = fs.readdirSync(PROJECTS_DIR).filter(file => file.endsWith('.mdx'));
       for (const file of mdxFiles) {
         await processMdxFile(path.join(PROJECTS_DIR, file));
+        processedFiles++;
       }
     }
     
@@ -260,7 +273,10 @@ async function syncNotionImages() {
     fs.writeFileSync(MANIFEST_FILE, JSON.stringify(imageManifest, null, 2));
     console.log(`Saved image manifest with ${Object.keys(imageManifest).length} entries`);
     
-    console.log('Finished syncing Notion images');
+    // Update the collection timestamp after processing all images
+    updateCollectionTimestamp('images');
+    
+    console.log(`Finished syncing Notion images. Processed ${processedFiles} files.`);
   } catch (error) {
     console.error('Error syncing Notion images:', error);
   }

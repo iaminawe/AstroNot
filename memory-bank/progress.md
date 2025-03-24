@@ -33,11 +33,20 @@
   - Projects database for showcasing work
   - Services database for displaying offerings
   - Testimonials database for client feedback
+  - Categories database for organizing content
   - Work Experience database for professional history
   - About page content database for personal information
   - Social Links database for managing social media links
   - Home Hero database for customizing the homepage hero section
   - Site Settings database for managing global site settings (title, logo, favicon, meta tags, etc.)
+
+- **Efficient Timestamp Tracking System**: Implemented a timestamp tracking system that:
+  - Only syncs content that has been updated since the last sync
+  - Maintains timestamps for both collections and individual items
+  - Significantly reduces API calls to Notion
+  - Speeds up the sync process, especially for sites with a lot of content
+  - Is integrated across all sync scripts (services, testimonials, hero, categories, social links, projects, etc.)
+  - Provides a unified `sync:notion` command (with `sync:all` as an alias) to sync all content types efficiently
 
 - **Configuration Files**: Created configuration files for various components of the website:
   - `src/config/about.ts` for about page content

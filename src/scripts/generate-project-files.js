@@ -6,6 +6,7 @@ import { config } from 'dotenv';
 import { Client } from "@notionhq/client";
 import { NotionToMarkdown } from "notion-to-md";
 import { delay } from '../helpers/delay.mjs';
+import { needsSync, updateTimestamp, getCollectionLastSync, updateCollectionTimestamp } from './notion-timestamp-tracker.js';
 
 // Load environment variables from .env file
 config();
@@ -100,8 +101,36 @@ async function fetchProjectsFromNotion() {
   }
 
   try {
+    // Get the last sync time for projects
+    const lastSyncTime = getCollectionLastSync('projects');
+    console.log("Last projects sync time:", lastSyncTime || "Never synced");
+    
+    let queryFilter = {
+      property: "active",
+      checkbox: {
+        equals: true,
+      },
+    };
+    
+    // If we have a last sync time, add a filter for last_edited_time
+    if (lastSyncTime) {
+      queryFilter = {
+        and: [
+          queryFilter,
+          {
+            timestamp: "last_edited_time",
+            last_edited_time: {
+              on_or_after: lastSyncTime
+            }
+          }
+        ]
+      };
+      console.log("Filtering for projects updated since:", lastSyncTime);
+    }
+    
     const { results } = await notion.databases.query({
       database_id: projectsDbId,
+      filter: queryFilter,
     });
 
     const projects = [];
@@ -133,6 +162,9 @@ async function fetchProjectsFromNotion() {
                     project.properties.coverImage?.files[0]?.external?.url || 
                     "";
       }
+      
+      // Update the timestamp for this project
+      updateTimestamp('project', project.id, project.last_edited_time);
       
       projects.push({
         id: project.id,
@@ -184,6 +216,9 @@ async function generateProjectFiles() {
     }
     
     console.log(`Found ${projects.length} projects in Notion database`);
+    
+    // Update the collection timestamp after processing all projects
+    updateCollectionTimestamp('projects');
     
     // Generate a markdown file for each project
     for (const project of projects) {

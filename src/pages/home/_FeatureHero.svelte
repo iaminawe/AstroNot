@@ -7,6 +7,11 @@
   export let heroContent = {};
   export let source = "CONFIG";
   
+  $: {
+    // No need to process Markdown anymore since we're using HTML directly
+    heroContent.formattedContent = heroContent.content || '';
+  }
+
   // Log for debugging
   onMount(() => {
     console.log("FeatureHero component mounted");
@@ -82,7 +87,7 @@
   {#if heroContent.content}
     <div class="max-w-screen-xl px-4 mx-auto">
       <div class="prose dark:prose-invert mt-12 format format-sm sm:format-base lg:format-lg format-blue dark:format-invert max-w-none">
-        {@html heroContent.content}
+        {@html heroContent.formattedContent}
       </div>
     </div>
   {/if}

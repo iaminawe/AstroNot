@@ -4,6 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { config } from 'dotenv';
 import { Client } from "@notionhq/client";
+import { needsSync, updateTimestamp, getCollectionLastSync, updateCollectionTimestamp } from './notion-timestamp-tracker.js';
 
 // Load environment variables from .env file
 config();
@@ -52,10 +53,28 @@ async function fetchSocialLinksFromNotion() {
   }
 
   try {
+    // Get the last sync time for social links
+    const lastSyncTime = getCollectionLastSync('social-links');
+    console.log("Last social links sync time:", lastSyncTime || "Never synced");
+    
     console.log("Querying social links database:", socialLinksDbId);
+    
+    let queryFilter = {};
+    
+    // If we have a last sync time, add a filter for last_edited_time
+    if (lastSyncTime) {
+      queryFilter = {
+        timestamp: "last_edited_time",
+        last_edited_time: {
+          on_or_after: lastSyncTime
+        }
+      };
+      console.log("Filtering for social links updated since:", lastSyncTime);
+    }
     
     const { results } = await notion.databases.query({
       database_id: socialLinksDbId,
+      filter: Object.keys(queryFilter).length > 0 ? queryFilter : undefined,
       sorts: [
         {
           property: "order",
@@ -71,18 +90,26 @@ async function fetchSocialLinksFromNotion() {
       return [];
     }
 
-    const socialLinks = results.map(link => ({
-      id: link.id,
-      name: link.properties.name?.title[0]?.plain_text || "Untitled Link",
-      url: link.properties.url?.url || "#",
-      icon: link.properties.icon?.rich_text[0]?.plain_text || "",
-      iconType: link.properties.iconType?.select?.name || "custom", // 'custom' or 'component'
-      order: link.properties.order?.number || 0,
-      active: link.properties.active?.checkbox || true
-    }));
+    const socialLinks = results.map(link => {
+      // Update the timestamp for this social link
+      updateTimestamp('social-link', link.id, link.last_edited_time);
+      
+      return {
+        id: link.id,
+        name: link.properties.name?.title[0]?.plain_text || "Untitled Link",
+        url: link.properties.url?.url || "#",
+        icon: link.properties.icon?.rich_text[0]?.plain_text || "",
+        iconType: link.properties.iconType?.select?.name || "custom", // 'custom' or 'component'
+        order: link.properties.order?.number || 0,
+        active: link.properties.active?.checkbox || true
+      };
+    });
 
     console.log("Social links processed:", socialLinks.length);
     
+    // Update the collection timestamp after processing all social links
+    updateCollectionTimestamp('social-links');
+
     return socialLinks.filter(link => link.active).sort((a, b) => a.order - b.order);
   } catch (error) {
     console.error("Error fetching social links from Notion:", error);

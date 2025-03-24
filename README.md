@@ -55,11 +55,14 @@ AstroNot includes `pnpm` out of the box, and supports `bun`! Feel free to replac
 - Tag support: Syncs tags with your posts, including color!
 - Automatically generate Table of Content based on document. Supports nested headings.
 - Images optimized based on view resolution at build time. High resolution images will be converted to the best format and size for the layout.
+- **Efficient Timestamp Tracking**: Only sync content that has been updated since the last sync, reducing API calls and sync time.
 - **Enhanced Notion Integration**: Optional integration with multiple Notion databases for dynamic content:
   - Author database for managing blog post author information
   - Projects database for showcasing your work
-  - Services database for displaying your offerings
-  - Testimonials database for client feedback
+  - Services database for listing your offerings
+  - Testimonials database for displaying client feedback
+  - Categories database for organizing content
+  - Social links database for your social media presence
   - Work Experience database for your professional history
   - About page content database for your personal information
   - Social Links database for managing social media links across the site
@@ -112,6 +115,50 @@ AstroNot includes `pnpm` out of the box, and supports `bun`! Feel free to replac
 - Move `.env.example` to `.env` and add your Notion API key and database ID
 - Run `pnpm sync` to sync Notion Content for the first time
 - Run `pnpm dev` to start development server
+
+## 🔄 Notion Sync System
+
+AstroNot includes an efficient timestamp tracking system that only syncs content that has been updated since the last sync, reducing API calls and sync time.
+
+### Sync Commands
+
+```bash
+# Sync all content from Notion
+npm run sync:notion
+
+# Alias for sync:notion
+npm run sync:all
+
+# Sync specific content types
+npm run sync:published  # Sync published posts
+npm run sync:projects   # Sync projects
+npm run sync:services   # Sync services
+npm run sync:testimonials # Sync testimonials
+npm run sync:hero      # Sync hero content
+npm run sync:categories # Sync categories
+npm run sync:social-links # Sync social links
+npm run sync:work-experience # Sync work experience
+npm run sync:author    # Sync author information
+npm run sync:about     # Sync about page content
+npm run sync:images    # Sync images from Notion
+```
+
+### How Timestamp Tracking Works
+
+The timestamp tracking system maintains timestamps for:
+
+1. **Collections**: Each content type (services, testimonials, posts, etc.) has a collection timestamp that records when it was last synced.
+
+2. **Individual Items**: Each item (post, project, service, etc.) has its own timestamp that records when it was last updated.
+
+When syncing content:
+
+1. The system checks the last sync time for the collection.
+2. It only fetches items from Notion that have been updated since that time.
+3. After processing each item, it updates the item's timestamp.
+4. After processing all items in a collection, it updates the collection timestamp.
+
+This approach significantly reduces the number of API calls to Notion and speeds up the sync process, especially for sites with a lot of content.
 
 ### Deployment with Nixpacks
 

@@ -22,6 +22,13 @@ try {
   console.warn('Failed to load services data:', error);
 }
 
+let categories = [];
+try {
+  categories = (await import('./categories.json')).default;
+} catch (error) {
+  console.warn('Failed to load categories data:', error);
+}
+
 let socialLinks = [];
 try {
   socialLinks = (await import('./social-links.json')).default;
@@ -54,7 +61,8 @@ try {
 export { 
   testimonials, 
   heroContent, 
-  services, 
+  services,
+  categories,
   socialLinks, 
   workExperience, 
   author,
