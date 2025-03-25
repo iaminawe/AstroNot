@@ -66,8 +66,11 @@ async function fetchTestimonialsFromNotion() {
       },
     };
     
-    // If we have a last sync time, add a filter for last_edited_time
-    if (lastSyncTime) {
+    // Check if we have any existing testimonials
+    const forceSync = !fs.existsSync(OUTPUT_FILE);
+    
+    // If we have a last sync time and we're not forcing sync, add a filter for last_edited_time
+    if (lastSyncTime && !forceSync) {
       queryFilter = {
         and: [
           queryFilter,
@@ -80,6 +83,8 @@ async function fetchTestimonialsFromNotion() {
         ]
       };
       console.log("Filtering for testimonials updated since:", lastSyncTime);
+    } else {
+      console.log("Fetching all testimonials (force sync)");
     }
     
     const response = await notion.databases.query({

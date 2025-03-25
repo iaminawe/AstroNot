@@ -5,28 +5,17 @@ import Footer from "./_Footer.svelte";
 import { navbar } from "../stores/layout";
 import { getImage } from "astro:assets";
 import { postImageImport } from "../helpers/images.mjs";
-import { siteSettings as configSiteSettings } from "../config/site";
-import { fetchSiteSettings } from "../helpers/notion.js";
-
 const { title: propTitle, description: propDescription, cover } = Astro.props;
 let optimizedCoverImage: any = null;
 
-// Fetch site settings from Notion if available
-let siteSettings = configSiteSettings;
-const siteSettingsDbId = import.meta.env.VITE_SITE_SETTINGS_DB_ID;
-const shouldFetchFromNotion = siteSettingsDbId && 
-                             siteSettingsDbId !== 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX';
-
-if (shouldFetchFromNotion) {
-  try {
-    const notionSiteSettings = await fetchSiteSettings();
-    if (notionSiteSettings) {
-      siteSettings = notionSiteSettings;
-    }
-  } catch (error) {
-    console.error("Error fetching site settings from Notion:", error);
-  }
-}
+// Use default site settings for now until Notion integration is complete
+const siteSettings = {
+  title: 'Gregg Coppen',
+  description: 'AI Consulting, Design, Development',
+  favicon: '/favicon.ico',
+  metaTags: '',
+  metaKeywords: ''
+};
 
 // Use prop values if provided, otherwise use site settings
 const title = propTitle || siteSettings.title;

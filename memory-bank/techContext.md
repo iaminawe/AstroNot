@@ -44,18 +44,33 @@
 - **Vite**: `^6.1.0`
 - **Svelte Inspector**: `^4.0.1`
 
+## Data Architecture
+- **Static Content**: Blog posts and projects are served from static MDX files
+- **Static Data**: JSON files in `src/data` directory store:
+  - Author information
+  - Services
+  - Testimonials
+  - Categories
+  - Work Experience
+  - About content
+  - Social Links
+  - Home Hero content
+- **Notion Integration**:
+  - Notion API is used only during build process
+  - Generates static JSON files from Notion databases
+  - Site Settings currently uses hardcoded defaults
+
 ## Integration Points
-- **Notion API**: Used for syncing Notion content with the website.
-- **Flowbite**: Integrated with Tailwind CSS for UI components.
-- **Svelte**: Used for interactive elements and dynamic content.
-- **Tailwind CSS**: Used for styling the website.
-- **Sharp**: Used for image optimization.
-- **Notion-to-MD**: Used for converting Notion content to Markdown.
-- **Marked**: Used for rendering Markdown content consistently across different page types.
-- **Reading Time**: Used for calculating reading time based on content length.
-- **Lodash**: Used for common programming tasks.
-- **Nanostores**: Used for state management in Svelte components.
-- **Svelte Inspector**: Used for inspecting Svelte components in the browser.
+- **Flowbite**: Integrated with Tailwind CSS for UI components
+- **Svelte**: Used for interactive elements and dynamic content
+- **Tailwind CSS**: Used for styling the website
+- **Sharp**: Used for image optimization
+- **Notion-to-MD**: Used for converting Notion content to Markdown during build
+- **Marked**: Used for rendering Markdown content consistently
+- **Reading Time**: Used for calculating reading time based on content length
+- **Lodash**: Used for common programming tasks
+- **Nanostores**: Used for state management in Svelte components
+- **Svelte Inspector**: Used for inspecting Svelte components in the browser
 
 ## Development Workflow
 - **Local Development**: Developers use `pnpm dev` to start the local development server.

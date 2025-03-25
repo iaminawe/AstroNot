@@ -28,17 +28,19 @@
   - Updated `astro.config.mjs` to include the Svelte Inspector plugin.
   - Updated `memory-bank/techContext.md` to reflect the latest dependencies and integration points.
 
-- **Enhanced Notion Integration**: Added support for multiple Notion databases:
-  - Author database for managing blog post author information
-  - Projects database for showcasing work
-  - Services database for displaying offerings
-  - Testimonials database for client feedback
-  - Categories database for organizing content
-  - Work Experience database for professional history
-  - About page content database for personal information
-  - Social Links database for managing social media links
-  - Home Hero database for customizing the homepage hero section
-  - Site Settings database for managing global site settings (title, logo, favicon, meta tags, etc.)
+- **Static Data Architecture**: Implemented a static data architecture:
+  - Blog posts and projects are served from static MDX files
+  - All other data is served from static JSON files in the `src/data` directory:
+    - Author information for blog posts
+    - Services for displaying offerings
+    - Testimonials for client feedback
+    - Categories for organizing content
+    - Work Experience for professional history
+    - About page content for personal information
+    - Social Links for managing social media links
+    - Home Hero for customizing the homepage hero section
+  - Notion API is used only during the build process to generate these static files
+  - Site Settings currently uses hardcoded defaults (Notion integration pending)
 
 - **Efficient Timestamp Tracking System**: Implemented a timestamp tracking system that:
   - Only syncs content that has been updated since the last sync

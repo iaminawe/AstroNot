@@ -51,14 +51,27 @@ export function saveTimestamps(timestamps) {
  * @param {string} type The type of item (e.g., 'services', 'projects')
  * @param {string} id The unique ID of the item
  * @param {string} lastUpdated The lastUpdated timestamp from Notion
+ * @param {boolean} forceSync Force sync regardless of timestamp
  * @returns {boolean} True if the item needs to be synced, false otherwise
  */
-export function needsSync(type, id, lastUpdated) {
-  if (!lastUpdated) {
-    return true; // If no lastUpdated provided, always sync
+export function needsSync(type, id, lastUpdated, forceSync = false) {
+  if (forceSync || !lastUpdated) {
+    return true; // If forceSync is true or no lastUpdated provided, always sync
   }
   
   const timestamps = loadTimestamps();
+  
+  // Check if we have any items of this type synced
+  const hasAnyItemsOfType = Object.keys(timestamps).some(key => key.startsWith(`${type}:`));
+  if (!hasAnyItemsOfType) {
+    return true; // If no items of this type exist, always sync
+  }
+  
+  // Check if we have any timestamps at all - if not, this is first run
+  if (Object.keys(timestamps).length === 0) {
+    return true; // First run, always sync
+  }
+  
   const key = `${type}:${id}`;
   
   // If no timestamp stored or the stored timestamp is older, sync is needed

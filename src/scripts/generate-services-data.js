@@ -83,7 +83,7 @@ async function fetchCategoryDetails(categoryId) {
  * Fetch services from Notion database
  * @returns {Promise<Array>} Array of service objects
  */
-async function fetchServicesFromNotion() {
+async function fetchServicesFromNotion(forceSync = false) {
   console.log("=== FETCH SERVICES FUNCTION CALLED ===");
   
   // Check if Notion client is initialized
@@ -128,8 +128,8 @@ async function fetchServicesFromNotion() {
       },
     };
     
-    // If we have a last sync time, add a filter for last_edited_time
-    if (lastSyncTime) {
+    // If we have a last sync time and we're not forcing sync, add a filter for last_edited_time
+    if (lastSyncTime && !forceSync) {
       queryFilter = {
         and: [
           queryFilter,
@@ -142,6 +142,8 @@ async function fetchServicesFromNotion() {
         ]
       };
       console.log("Filtering for services updated since:", lastSyncTime);
+    } else {
+      console.log("Fetching all services (force sync)");
     }
     
     const response = await notion.databases.query({
@@ -342,8 +344,11 @@ async function generateServicesData() {
       fs.mkdirSync(OUTPUT_DIR, { recursive: true });
     }
     
+    // Check if we have any existing services
+    const forceSync = !fs.existsSync(OUTPUT_FILE);
+    
     // Fetch services from Notion
-    const services = await fetchServicesFromNotion();
+    const services = await fetchServicesFromNotion(forceSync);
     
     if (!services || services.length === 0) {
       console.warn('No services found in Notion database');

@@ -2,36 +2,13 @@
 import { getImage } from "astro:assets";
 import Layout from "../layouts/Layout.astro";
 import Tags from "../components/Tags.astro";
-import { authorData as configAuthorData } from "../config/author";
-import { fetchAuthor } from "../helpers/notion.js";
+import { author as authorData } from "../data/index.js";
 
 const PROJECTS_PATH = "projects";
 const COVER_IMG_ASPECT_RATIO = "13/9"; // TODO: Expose as variable
 
 // Get all projects from static markdown files
 const projects = await Astro.glob("./projects/*.mdx");
-
-// Fetch author data from Notion if available
-let authorData = configAuthorData;
-const authorDbId = import.meta.env.VITE_AUTHOR_DB_ID;
-const shouldFetchAuthorFromNotion = authorDbId &&
-                             authorDbId !== 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX';
-
-if (shouldFetchAuthorFromNotion) {
-  try {
-    const notionAuthorData = await fetchAuthor();
-    if (notionAuthorData) {
-      authorData = notionAuthorData;
-    } else {
-      console.info("No author data found in Notion using config fallback");
-    }
-  } catch (error) {
-    console.error("Error fetching author data from Notion:", error);
-    console.info("Using author data from config file as fallback");
-  }
-} else {
-  console.info("No VITE_AUTHOR_DB_ID provided using author data from config file");
-}
 ---
 
 <Layout title="Projects">

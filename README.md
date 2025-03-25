@@ -56,18 +56,19 @@ AstroNot includes `pnpm` out of the box, and supports `bun`! Feel free to replac
 - Automatically generate Table of Content based on document. Supports nested headings.
 - Images optimized based on view resolution at build time. High resolution images will be converted to the best format and size for the layout.
 - **Efficient Timestamp Tracking**: Only sync content that has been updated since the last sync, reducing API calls and sync time.
-- **Enhanced Notion Integration**: Optional integration with multiple Notion databases for dynamic content:
-  - Author database for managing blog post author information
-  - Projects database for showcasing your work
-  - Services database for listing your offerings
-  - Testimonials database for displaying client feedback
-  - Categories database for organizing content
-  - Social links database for your social media presence
-  - Work Experience database for your professional history
-  - About page content database for your personal information
-  - Social Links database for managing social media links across the site
-  - Home Hero database for customizing the homepage hero section
-  - Site Settings database for managing global site settings (title, logo, favicon, meta tags, etc.)
+- **Static Data Architecture**: All content is served from static files for optimal performance:
+  - Blog posts and projects are served from static MDX files
+  - Other data is served from static JSON files in the `src/data` directory:
+    - Author information for blog posts
+    - Services for displaying offerings
+    - Testimonials for client feedback
+    - Categories for organizing content
+    - Work Experience for professional history
+    - About page content for personal information
+    - Social Links for managing social media links
+    - Home Hero for customizing the homepage hero section
+  - Notion API is used only during the build process to generate these static files
+  - Site Settings currently uses hardcoded defaults (Notion integration pending)
 
 ### 🆕 New Features
 
@@ -223,19 +224,34 @@ To deploy:
 Start by replacing with your own content & design. Create new pages by adding a new `.astro` file to `/src/pages`!
 _Note: With Astro, components will not ship any Javascript to client unless `client:load` or `client:only` are used for interactivity._
 
-## 🔄 Configuration Files
+## 📂 Data Architecture
 
-AstroNot now includes configuration files for various components of the website:
+AstroNot uses a static-first approach for optimal performance:
 
-- `src/config/about.ts`: Configuration for the about page content
-- `src/config/contact.ts`: Configuration for the contact form
-- `src/config/email.ts`: Configuration for email functionality
-- `src/config/hero.ts`: Configuration for the homepage hero section
-- `src/config/resume.ts`: Configuration for the resume timeline
-- `src/config/services.ts`: Configuration for the services section
-- `src/config/testimonials.ts`: Configuration for the testimonials section
+1. **Static Content**
+   - Blog posts and projects are served from static MDX files
+   - All other content is served from static JSON files in the `src/data` directory
 
-These configuration files make it easy to customize the content of your website without having to modify the components directly. They also serve as fallbacks when Notion integration is not set up or when a specific Notion database ID is not provided.
+2. **Data Types**
+   - Author information for blog posts
+   - Services for displaying offerings
+   - Testimonials for client feedback
+   - Categories for organizing content
+   - Work Experience for professional history
+   - About page content for personal information
+   - Social Links for managing social media links
+   - Home Hero for customizing the homepage hero section
+
+3. **Notion Integration**
+   - Notion API is used only during the build process
+   - Generates static JSON files from Notion databases
+   - Site Settings currently uses hardcoded defaults
+
+4. **Benefits**
+   - Improved performance with static files
+   - Reduced API calls to Notion
+   - Better reliability and offline capabilities
+   - Simpler deployment and hosting
 
 ## Performance
 

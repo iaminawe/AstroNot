@@ -86,9 +86,10 @@ const THROTTLE_DURATION = 334; // ms - Notion API has a rate limit of 3 requests
 
 /**
  * Fetch projects from Notion database
+ * @param {boolean} forceSync - Whether to force sync all projects
  * @returns {Promise<Array>} Array of project objects
  */
-async function fetchProjectsFromNotion() {
+async function fetchProjectsFromNotion(forceSync = false) {
   if (!notion) {
     console.warn("Notion client not initialized. Cannot fetch projects.");
     return [];
@@ -102,7 +103,7 @@ async function fetchProjectsFromNotion() {
 
   try {
     // Get the last sync time for projects
-    const lastSyncTime = getCollectionLastSync('projects');
+    const lastSyncTime = forceSync ? null : getCollectionLastSync('projects');
     console.log("Last projects sync time:", lastSyncTime || "Never synced");
     
     let queryFilter = {
@@ -112,8 +113,8 @@ async function fetchProjectsFromNotion() {
       },
     };
     
-    // If we have a last sync time, add a filter for last_edited_time
-    if (lastSyncTime) {
+    // If we have a last sync time and we're not forcing sync, add a filter for last_edited_time
+    if (lastSyncTime && !forceSync) {
       queryFilter = {
         and: [
           queryFilter,
@@ -126,6 +127,8 @@ async function fetchProjectsFromNotion() {
         ]
       };
       console.log("Filtering for projects updated since:", lastSyncTime);
+    } else {
+      console.log("Fetching all projects (force sync)");
     }
     
     const { results } = await notion.databases.query({
@@ -207,8 +210,12 @@ async function generateProjectFiles() {
       fs.mkdirSync(OUTPUT_DIR, { recursive: true });
     }
     
+    // Check if we have any project files
+    const projectFiles = fs.readdirSync(OUTPUT_DIR).filter(file => file.endsWith('.mdx'));
+    const forceSync = projectFiles.length === 0;
+    
     // Fetch projects from Notion
-    const projects = await fetchProjectsFromNotion();
+    const projects = await fetchProjectsFromNotion(forceSync);
     
     if (!projects || projects.length === 0) {
       console.warn('No projects found in Notion database');
@@ -216,9 +223,6 @@ async function generateProjectFiles() {
     }
     
     console.log(`Found ${projects.length} projects in Notion database`);
-    
-    // Update the collection timestamp after processing all projects
-    updateCollectionTimestamp('projects');
     
     // Generate a markdown file for each project
     for (const project of projects) {
@@ -237,12 +241,21 @@ async function generateProjectFiles() {
         last_edited_time 
       } = project;
       
-      // Create frontmatter
-      const frontmatter = `---
+      const filePath = path.join(OUTPUT_DIR, `${slug}.mdx`);
+      const fileExists = fs.existsSync(filePath);
+      
+      // Check if any project files exist in the output directory
+      const projectFiles = fs.readdirSync(OUTPUT_DIR).filter(file => file.endsWith('.mdx'));
+      const forceSync = projectFiles.length === 0;
+      
+      // Always create the file if it doesn't exist, or update if modified, or force sync if no projects exist
+      if (!fileExists || needsSync('project', id, last_edited_time, forceSync)) {
+        // Create frontmatter
+        const frontmatter = `---
 layout: "../../layouts/ProjectLayout.astro"
 id: "${id}"
 slug: "${slug}"
-title: "${title.replace(/"/g, '\\"')}"
+title: "${title.replace(/"/g, '\"')}"
 cover: "${coverImage}"
 tags: ${JSON.stringify(tags)}
 created_time: ${created_time}
@@ -252,19 +265,31 @@ featured: ${featured}
 order: ${order}
 status: "published"
 publish_date: ${created_time}
-description: "${description ? description.replace(/"/g, '\\"') : ''}"
+description: "${description ? description.replace(/"/g, '\"') : ''}"
 ---
 import Image from '../../components/Image.astro';
 import BookmarkCard from '../../components/BookmarkCard.astro';
 
 ${content}`;
-      
-      // Write the file
-      const filePath = path.join(OUTPUT_DIR, `${slug}.mdx`);
-      fs.writeFileSync(filePath, frontmatter);
-      
-      console.log(`Generated markdown file for project: ${title} (${slug})`);
+        
+        // Write the file
+        fs.writeFileSync(filePath, frontmatter);
+        
+        if (fileExists) {
+          console.log(`Updated markdown file for project: ${title} (${slug})`);
+        } else {
+          console.log(`Created new markdown file for project: ${title} (${slug})`);
+        }
+        
+        // Update the timestamp for this project
+        updateTimestamp('project', id, last_edited_time);
+      } else {
+        console.log(`Skipping project ${title} (${slug}) - no changes detected`);
+      }
     }
+    
+    // Update the collection timestamp after processing all projects
+    updateCollectionTimestamp('projects');
     
     console.log('Project markdown files generated successfully');
   } catch (error) {

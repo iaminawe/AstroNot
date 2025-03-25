@@ -59,10 +59,13 @@ async function fetchSocialLinksFromNotion() {
     
     console.log("Querying social links database:", socialLinksDbId);
     
+    // Check if we have any existing social links
+    const forceSync = !fs.existsSync(OUTPUT_FILE);
+    
     let queryFilter = {};
     
-    // If we have a last sync time, add a filter for last_edited_time
-    if (lastSyncTime) {
+    // If we have a last sync time and we're not forcing sync, add a filter for last_edited_time
+    if (lastSyncTime && !forceSync) {
       queryFilter = {
         timestamp: "last_edited_time",
         last_edited_time: {
@@ -70,6 +73,8 @@ async function fetchSocialLinksFromNotion() {
         }
       };
       console.log("Filtering for social links updated since:", lastSyncTime);
+    } else {
+      console.log("Fetching all social links (force sync)");
     }
     
     const { results } = await notion.databases.query({

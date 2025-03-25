@@ -8,82 +8,42 @@ import ServicesMatrix from "../components/ServicesMatrix.svelte";
 import LatestPosts from "../components/LatestPosts.astro";
 import CaseStudiesCarouselWrapper from "../components/CaseStudiesCarouselWrapper.astro";
 import Testimonials from "../components/Testimonials.svelte";
-import { fetchServices, fetchHomeHero } from "../helpers/notion.js";
-import { services as configServices } from "../config/services.ts";
-import { heroContent as configHeroContent } from "../config/hero.ts";
-import { testimonials as configTestimonials } from "../config/testimonials.ts";
-
 // Import static data (generated during build)
 // Use try-catch to handle the case where the file doesn't exist yet
-let staticTestimonials = [];
-let staticHeroContent = null;
-let staticServices = [];
-let staticCategories = [];
-let staticSocialLinks = [];
-let staticWorkExperience = [];
-let staticAuthor = null;
+let testimonials = [];
+let heroContent = {};
+let services = [];
+let categories = [];
+let socialLinks = [];
+let workExperience = [];
+let author = {};
 
 try {
   // Import from the central data index file
   const dataModule = await import("../data/index.js");
-  staticTestimonials = dataModule.testimonials || [];
-  staticHeroContent = dataModule.heroContent || null;
-  staticServices = dataModule.services || [];
-  staticCategories = dataModule.categories || [];
-  staticSocialLinks = dataModule.socialLinks || [];
-  staticWorkExperience = dataModule.workExperience || [];
-  staticAuthor = dataModule.author || null;
+  testimonials = dataModule.testimonials || [];
+  heroContent = dataModule.heroContent || {};
+  services = dataModule.services || [];
+  categories = dataModule.categories || [];
+  socialLinks = dataModule.socialLinks || [];
+  workExperience = dataModule.workExperience || [];
+  author = dataModule.author || {};
 } catch (error) {
   console.warn("Could not import static data:", error.message);
 }
 
-// Debug environment variables
-console.log("=== DEBUG ENV VARIABLES ===");
-console.log("VITE_NOTION_KEY:", import.meta.env.VITE_NOTION_KEY ? "Present (length: " + import.meta.env.VITE_NOTION_KEY.length + ")" : "Missing");
-console.log("VITE_SERVICES_DB_ID:", import.meta.env.VITE_SERVICES_DB_ID);
-console.log("VITE_CATEGORIES_DB_ID:", import.meta.env.VITE_CATEGORIES_DB_ID);
-console.log("VITE_HOME_HERO_DB_ID:", import.meta.env.VITE_HOME_HERO_DB_ID);
-console.log("VITE_TESTIMONIALS_DB_ID:", import.meta.env.VITE_TESTIMONIALS_DB_ID);
-console.log("=== END DEBUG ===");
-
-// Use static services data (generated during build)
-// Fall back to config services if static data is not available
-let services = staticServices.length > 0 ? staticServices : configServices;
-let servicesSource = staticServices.length > 0 ? "STATIC" : "CONFIG";
-
-console.log(`Services source: ${servicesSource}`);
-console.log(`Services count: ${services.length}`);
-
-// Use static categories data
-let categories = staticCategories;
-console.log(`Categories count: ${categories.length}`);
-
-// Use static hero content (generated during build)
-// Fall back to config hero content if static data is not available
-let heroContent = staticHeroContent ? staticHeroContent : configHeroContent;
-let heroSource = staticHeroContent ? "STATIC" : "CONFIG";
-
-console.log(`Hero source: ${heroSource}`);
-
-// Use static testimonials data (generated during build)
-// Fall back to config testimonials if static data is not available
-let testimonials = staticTestimonials || configTestimonials;
-let testimonialsSource = staticTestimonials ? "STATIC" : "CONFIG";
-let testimonialsLimit = 6; // Default limit
-
-console.log(`Testimonials source: ${testimonialsSource}`);
-console.log(`Testimonials count: ${testimonials.length}`);
+const testimonialsLimit = 6; // Default limit
 ---
 
 <Layout title="Gregg Coppen | AI Consulting, Design, Development">
   <main class="bg-transparent">
     <div class="w-full">
-      <FeatureHero heroContent={heroContent} source={heroSource} client:load />
+      <FeatureHero heroContent={heroContent} client:load />
       <!-- <Logos client:load />
       <Features client:load /> -->
-      <ServicesMatrix services={services} categories={categories} source={servicesSource} client:load />
+      <ServicesMatrix services={services} categories={categories} client:load />
       <CaseStudiesCarouselWrapper />
-      <Testimonials testimonials={testimonials} source={testimonialsSource} limit={testimonialsLimit} client:load />
+      <Testimonials testimonials={testimonials} limit={testimonialsLimit} client:load />
       <LatestPosts fullWidth={false} animated={true} />
       <Newsletter client:load />
     </div>

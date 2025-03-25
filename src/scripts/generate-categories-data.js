@@ -24,7 +24,7 @@ if (NOTION_KEY && CATEGORIES_DB_ID) {
   }
 }
 
-async function fetchCategoriesFromNotion() {
+async function fetchCategoriesFromNotion(forceSync = false) {
   if (!notion) {
     console.error("Notion client not initialized");
     return [];
@@ -32,7 +32,7 @@ async function fetchCategoriesFromNotion() {
 
   try {
     // Get the last sync time for categories
-    const lastSyncTime = getCollectionLastSync('categories');
+    const lastSyncTime = forceSync ? null : getCollectionLastSync('categories');
     console.log("Last categories sync time:", lastSyncTime || "Never synced");
     
     let queryFilter = {
@@ -42,8 +42,8 @@ async function fetchCategoriesFromNotion() {
       },
     };
     
-    // If we have a last sync time, add a filter for last_edited_time
-    if (lastSyncTime) {
+    // If we have a last sync time and we're not forcing sync, add a filter for last_edited_time
+    if (lastSyncTime && !forceSync) {
       queryFilter = {
         and: [
           queryFilter,
@@ -56,6 +56,8 @@ async function fetchCategoriesFromNotion() {
         ]
       };
       console.log("Filtering for categories updated since:", lastSyncTime);
+    } else {
+      console.log("Fetching all categories (force sync)");
     }
     
     const response = await notion.databases.query({
@@ -123,14 +125,21 @@ async function fetchCategoriesFromNotion() {
 
 function validateHierarchy(categoriesMap) {
   const visited = new Set();
+  const path = new Set();
   
   for (const [id, category] of categoriesMap) {
     let current = category;
-    while (current.parent) {
-      if (visited.has(current.parent)) {
+    path.clear();
+    
+    while (current && current.parent) {
+      if (path.has(current.parent)) {
         console.error(`Circular reference detected in category ${current.id}`);
-        return;
+        // Break the circular reference by making this a top-level category
+        current.parent = null;
+        current.isTopLevel = true;
+        break;
       }
+      path.add(current.parent);
       visited.add(current.parent);
       current = categoriesMap.get(current.parent);
     }
@@ -140,6 +149,8 @@ function validateHierarchy(categoriesMap) {
   categoriesMap.forEach(category => {
     if (!category.isTopLevel && !category.parent && !categoriesMap.has(category.parent)) {
       console.warn(`Orphaned category detected: ${category.id} - ${category.name}`);
+      // Make orphaned categories top-level
+      category.isTopLevel = true;
     }
   });
 }
@@ -149,8 +160,23 @@ async function generateCategoriesData() {
     if (!fs.existsSync(OUTPUT_DIR)) {
       fs.mkdirSync(OUTPUT_DIR, { recursive: true });
     }
+    
+    // Check if we have existing categories
+    let forceSync = false;
+    if (!fs.existsSync(OUTPUT_FILE)) {
+      forceSync = true;
+    } else {
+      try {
+        const existingData = JSON.parse(fs.readFileSync(OUTPUT_FILE, 'utf8'));
+        if (!existingData.flat || existingData.flat.length === 0) {
+          forceSync = true;
+        }
+      } catch (e) {
+        forceSync = true;
+      }
+    }
 
-    const { categories, flat } = await fetchCategoriesFromNotion();
+    const { categories, flat } = await fetchCategoriesFromNotion(forceSync);
     
     fs.writeFileSync(OUTPUT_FILE, JSON.stringify({
       hierarchy: categories,

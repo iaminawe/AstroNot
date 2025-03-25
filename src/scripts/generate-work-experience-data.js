@@ -68,8 +68,14 @@ async function fetchWorkExperienceFromNotion() {
         {
           property: "startDate",
           direction: "descending",
-        },
+        }
       ],
+      filter: {
+        property: "active",
+        checkbox: {
+          equals: true
+        }
+      }
     });
 
     console.log("Work experience query results count:", results.length);
@@ -82,13 +88,15 @@ async function fetchWorkExperienceFromNotion() {
     const workExperience = [];
     
     for (const job of results) {
-      const title = job.properties.title?.title[0]?.plain_text || "Untitled Position";
-      const company = job.properties.company?.rich_text[0]?.plain_text || "";
-      const location = job.properties.location?.rich_text[0]?.plain_text || "";
+      const title = job.properties.Position?.rich_text[0]?.plain_text || "Untitled Position";
+      const company = job.properties.Company?.title[0]?.plain_text || "";
+      const location = job.properties.Location?.rich_text[0]?.plain_text || "";
       const startDate = job.properties.startDate?.date?.start || "";
       const endDate = job.properties.endDate?.date?.start || "Present";
       const period = `${startDate} - ${endDate}`;
-      const skills = job.properties.skills?.multi_select.map(skill => skill.name) || [];
+      const skills = job.properties.keySkills?.multi_select.map(skill => skill.name) || [];
+      const shortDescription = job.properties.Description?.rich_text[0]?.plain_text || "";
+      const employmentType = job.properties.employmentType?.select?.name || "";
       
       console.log(`Processing job: ${title} at ${company}`);
       
@@ -97,10 +105,10 @@ async function fetchWorkExperienceFromNotion() {
       await delay(THROTTLE_DURATION); // Throttle to avoid rate limiting
       
       // Convert description blocks to array of strings
-      const description = [];
+      const descriptionItems = [];
       for (const block of descriptionBlocks) {
         if (block.type === 'paragraph' && block.parent.includes('•')) {
-          description.push(block.parent.replace('• ', ''));
+          descriptionItems.push(block.parent.replace('• ', ''));
         }
       }
       
@@ -109,8 +117,11 @@ async function fetchWorkExperienceFromNotion() {
         company,
         location,
         period,
-        description,
+        description: descriptionItems.length > 0 ? descriptionItems : [shortDescription],
         skills,
+        employmentType,
+        startDate,
+        endDate
       });
       
       console.log(`Processed job: ${title} at ${company}`);

@@ -198,8 +198,12 @@ if (isPublished) {
   });
 }
 
-// Add last_edited_time filter if we have a last sync time
-if (lastSyncTime) {
+// Check if we have any existing posts
+const existingPosts = fs.readdirSync(POSTS_PATH).filter(file => file.endsWith('.mdx'));
+const forceSync = existingPosts.length === 0;
+
+// Add last_edited_time filter if we have a last sync time and we're not forcing sync
+if (lastSyncTime && !forceSync) {
   filters.push({
     timestamp: "last_edited_time",
     last_edited_time: {
@@ -207,6 +211,8 @@ if (lastSyncTime) {
     }
   });
   console.log("Filtering for posts updated since:", lastSyncTime);
+} else {
+  console.log("Fetching all posts (force sync)");
 }
 
 // Apply filters if we have any

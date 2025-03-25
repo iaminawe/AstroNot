@@ -162,8 +162,11 @@ async function fetchHomeHeroFromNotion() {
       }
     };
     
-    // If we have a last sync time, add a filter for last_edited_time
-    if (lastSyncTime) {
+    // Check if we have any existing hero data
+    const forceSync = !fs.existsSync(OUTPUT_FILE);
+    
+    // If we have a last sync time and we're not forcing sync, add a filter for last_edited_time
+    if (lastSyncTime && !forceSync) {
       queryFilter = {
         and: [
           queryFilter,
@@ -176,6 +179,8 @@ async function fetchHomeHeroFromNotion() {
         ]
       };
       console.log("Filtering for hero content updated since:", lastSyncTime);
+    } else {
+      console.log("Fetching all hero content (force sync)");
     }
     
     const { results } = await notion.databases.query({
