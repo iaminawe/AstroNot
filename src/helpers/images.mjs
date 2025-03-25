@@ -70,8 +70,11 @@ export async function postImageImport(imageFileName) {
     return projectImages[projectPath];
   }
 
-  if (images[imagePath]) {
-    return images[imagePath];
+  // Try to find the image in any directory
+  const allImages = { ...postImages, ...projectImages };
+  const imagePath = `../images/${name}${ext}`;
+  if (allImages[imagePath]) {
+    return allImages[imagePath];
   }
 
   // Try with .jpg extension as fallback in both directories
