@@ -1,5 +1,22 @@
 ---
 import { getImage } from "astro:assets";
+
+interface Frontmatter {
+  id: string;
+  title: string;
+  description: string;
+  publish_date: string;
+  author: string;
+  cover: string;
+  slug: string;
+  status: string;
+  reading_time: string;
+  tags?: Array<{ id: string; name: string }>;
+}
+
+interface Post {
+  frontmatter: Frontmatter;
+}
 import Layout from "../layouts/Layout.astro";
 import Tags from "../components/Tags.astro";
 import TagsFilter from "../components/TagsFilter.svelte";
@@ -13,7 +30,9 @@ const COVER_IMG_ASPECT_RATIO = "13/9"; // TODO: Expose as variable
 
 const { showTagsFilter = false } = Astro.props;
 
-const posts = await Astro.glob("./posts/*.mdx");
+const posts = await Promise.all(
+  Object.values(import.meta.glob<{ frontmatter: Frontmatter }>("./posts/*.mdx")).map(post => post())
+) as Post[];
 
 const seenTags = {};
 const tagsList = posts.reduce((acc, post) => {
@@ -79,9 +98,11 @@ const tagsList = posts.reduce((acc, post) => {
                 let preloadCoverImageMobileSrc: string = "";
 
                 if (cover) {
-                  const imageFilePath = (await postImageImport(cover)).default;
+                  const importedImage = await postImageImport(cover) as { default: any } | null;
+                  if (importedImage?.default) {
+                    const imageFilePath = importedImage.default;
 
-                  optimizedCoverImage = await getImage({
+                    optimizedCoverImage = await getImage({
                     src: imageFilePath,
                     width: 1400,
                   });
@@ -109,7 +130,10 @@ const tagsList = posts.reduce((acc, post) => {
                     })
                   ).src;
 
-                  coverImageSrc = (optimizedCoverImage as any).src;
+                    coverImageSrc = (optimizedCoverImage as any).src;
+                  } else {
+                    console.warn(`Failed to import cover image for post: ${post.frontmatter.slug}`);
+                  }
                 }
 
                 return (

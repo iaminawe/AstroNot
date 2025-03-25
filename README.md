@@ -436,7 +436,65 @@ AstroNot looks for `.astro`, `.md.` or `.mdx` files in the `src/pages/` director
 
 There's nothing special about `src/components/`, but that's where we like to put any Astro or React/Vue/Svelte/Preact components. It's recommended to use this location if sharing components.
 
-Any static assets, like images, can be placed in the `public/` directory. Images which are to be optimized need to be placed inside `/src/images`, as they need to be imported during Astro's build process.
+### Image Handling
+
+AstroNot features a unified image handling system that works seamlessly across all content types:
+
+1. **S3 Integration**:
+   - Automatic image migration to S3
+   - Smart prefix handling for different content types (posts/, projects/)
+   - Configurable bucket and region settings
+   - Local image cleanup after successful upload
+
+2. **Image Processing**:
+   - Responsive image generation (1920px, 1400px, 720px)
+   - WebP conversion for modern browsers
+   - Aspect ratio preservation
+   - Lazy loading support
+   - Content-based filename generation
+
+3. **Efficient Syncing**:
+   - Timestamp tracking to minimize API calls
+   - Smart caching with configurable headers
+   - Automatic retry for failed uploads
+   - Manifest tracking for image usage
+
+4. **Configuration**:
+   Required environment variables:
+   ```env
+   AWS_ACCESS_KEY_ID=your_key
+   AWS_SECRET_ACCESS_KEY=your_secret
+   S3_BUCKET_NAME=your_bucket
+   S3_REGION=your_region
+   S3_POSTS_PREFIX=posts
+   S3_PROJECTS_PREFIX=projects
+   ```
+
+5. **Commands**:
+   - `npm run sync:images` - Regular sync to S3
+   - `npm run sync:images:s3` - Force sync all images
+
+AstroNot features a sophisticated image handling system that works with both local and S3-hosted images:
+
+1. **Image Storage**:
+   - Local images can be placed in `/src/images` for optimization during build
+   - S3 storage for production images with automatic optimization
+   - Automatic cleanup of local images after S3 upload
+
+2. **Image Processing**:
+   - Automatic responsive image generation (1920px, 1400px, 720px)
+   - WebP conversion for modern browsers
+   - Aspect ratio preservation
+   - Lazy loading support
+   - Efficient error handling and fallbacks
+
+3. **Implementation**:
+   - Universal `postImageImport` function handles all image types
+   - Integrated with Astro's image optimization
+   - Consistent image handling across blog posts and projects
+   - Compatible with the timestamp tracking system
+
+Static assets that don't require optimization can still be placed in the `public/` directory.
 
 ## 🧞 Commands
 

@@ -156,7 +156,7 @@ async function optimizeImage(imageBuffer, contentType) {
   }
 }
 
-async function processImageUrl(url) {
+async function processImageUrl(url, type = 'posts') {
   try {
     // Download the image first to get its content hash
     const imageBuffer = await downloadImage(url);
@@ -164,7 +164,7 @@ async function processImageUrl(url) {
     const extension = mime.extension(contentType) || 'jpg';
 
     // Generate filename based on content hash
-    const filename = generateImageFilename(imageBuffer, extension);
+    const filename = generateImageFilename(imageBuffer, { extension, type });
 
     // Check if we've already processed this content hash
     const existingEntry = Object.entries(imageManifest).find(([_, data]) => 
@@ -189,8 +189,8 @@ async function processImageUrl(url) {
     if (storageMode === 's3') {
       // Upload to S3 if not exists
       if (!await imageExistsInS3(filename)) {
-        await uploadImageToS3(optimizedBuffer, filename, contentType);
-        console.log(`Uploaded new optimized image to S3: ${filename}`);
+        await uploadImageToS3(optimizedBuffer, filename, contentType, type);
+        console.log(`Uploaded new optimized image to S3: ${filename} (${type})`);
       }
       const s3Url = getS3ImageUrl(filename);
       imageManifest[url] = {
@@ -238,14 +238,19 @@ async function migrateLocalImage(filename) {
       return null;
     }
 
+    // Determine if this is a project image based on the file path
+    const isProjectImage = filename.includes('/projects/');
+    const type = isProjectImage ? 'projects' : 'posts';
+
     const imageBuffer = fs.readFileSync(localPath);
     const contentType = mime.lookup(filename) || 'image/jpeg';
+    const extension = mime.extension(contentType) || 'jpg';
 
     // Upload to S3
     if (!await imageExistsInS3(filename)) {
       const optimizedBuffer = await optimizeImage(imageBuffer, contentType);
-      await uploadImageToS3(optimizedBuffer, filename, contentType);
-      console.log(`Migrated image to S3: ${filename}`);
+      await uploadImageToS3(optimizedBuffer, filename, contentType, type);
+      console.log(`Migrated image to S3: ${filename} (${type})`);
     } else {
       console.log(`Image already exists in S3: ${filename}`);
     }
@@ -312,6 +317,10 @@ async function processMdxFile(filePath) {
   try {
     console.log(`Processing MDX file: ${filePath}`);
     
+    // Determine if this is a project file
+    const isProjectFile = filePath.includes('/projects/');
+    console.log(`File type: ${isProjectFile ? 'Project' : 'Post'}`);
+    
     // Read the file
     const content = fs.readFileSync(filePath, 'utf8');
     
@@ -325,7 +334,7 @@ async function processMdxFile(filePath) {
 
     // Process Notion URLs
     for (const url of urls) {
-      const newUrl = await processImageUrl(url);
+      const newUrl = await processImageUrl(url, isProjectFile ? 'projects' : 'posts');
       updatedContent = updatedContent.replace(new RegExp(url.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), newUrl);
     }
 

@@ -47,6 +47,15 @@
   - Maintains timestamps for both collections and individual items
   - Significantly reduces API calls to Notion
   - Speeds up the sync process, especially for sites with a lot of content
+
+- **Enhanced Image Handling System**: Implemented a unified image handling system that:
+  - Provides consistent image handling across all content types (blog posts, projects)
+  - Supports both local and S3-hosted images through a single interface
+  - Generates responsive images in multiple sizes (1920px, 1400px, 720px)
+  - Integrates with Astro's image optimization pipeline
+  - Includes robust error handling and fallbacks
+  - Maintains compatibility with the timestamp tracking system
+  - Automatically cleans up local images after S3 upload
   - Is integrated across all sync scripts (services, testimonials, hero, categories, social links, projects, etc.)
   - Provides a unified `sync:notion` command (with `sync:all` as an alias) to sync all content types efficiently
 

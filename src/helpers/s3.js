@@ -20,7 +20,13 @@ const s3Config = {
 // S3 bucket name
 const bucketName = process.env.S3_BUCKET_NAME;
 
-// Image prefix in S3 bucket (empty for root)
+// Image prefixes in S3 bucket
+const S3_PREFIXES = {
+  posts: process.env.S3_POSTS_PREFIX || 'posts',
+  projects: process.env.S3_PROJECTS_PREFIX || 'projects'
+};
+
+// Default image prefix (for backward compatibility)
 const imagePrefix = process.env.S3_IMAGE_PREFIX || '';
 
 // Check if S3 credentials are configured
@@ -49,9 +55,10 @@ if (isS3Configured()) {
  * @param {string} extension - The file extension (default: jpg)
  * @returns {string} - The generated filename
  */
-export const generateImageFilename = (imageBuffer, extension = 'jpg') => {
+export const generateImageFilename = (imageBuffer, { extension = 'jpg', type = 'posts', isCover = false } = {}) => {
   const hash = crypto.createHash('sha256').update(imageBuffer).digest('hex');
-  return `notion-${hash}.${extension}`;
+  const prefix = type === 'projects' ? 'project' : 'notion';
+  return `${prefix}-${hash}${isCover ? '-cover' : ''}.${extension}`;
 };
 
 /**
@@ -61,12 +68,14 @@ export const generateImageFilename = (imageBuffer, extension = 'jpg') => {
  * @param {string} contentType - The content type of the image
  * @returns {Promise<string>} - The URL of the uploaded image
  */
-export const uploadImageToS3 = async (imageBuffer, filename, contentType = 'image/jpeg') => {
+export const uploadImageToS3 = async (imageBuffer, filename, contentType = 'image/jpeg', type = 'posts') => {
   if (!isS3Configured() || !s3Client) {
     throw new Error('S3 is not configured');
   }
 
-  const key = imagePrefix ? `${imagePrefix}/${filename}` : filename;
+  // Use type-specific prefix if available, fallback to default prefix
+  const prefix = S3_PREFIXES[type] || imagePrefix;
+  const key = prefix ? `${prefix}/${filename}` : filename;
 
   try {
     const command = new PutObjectCommand({

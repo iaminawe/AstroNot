@@ -22,6 +22,7 @@
     "sync:images": "node src/scripts/sync-notion-images.js",
     "sync:images:local": "node src/scripts/sync-notion-images.js --local",
     "sync:images:s3": "node src/scripts/sync-notion-images.js --s3",
+    "migrate:s3": "node scripts/migrate-s3-images.mjs",
     "sync:notion": "node src/scripts/sync-all-notion.js && npm run sync:images:s3",
     "sync:all": "npm run sync:notion",
     "generate": "rimraf dist/** && ([ -d 'dist' ] || mkdir dist) && ([ -d 'dist/images' ] || mkdir dist/images) && ([ -d 'src/pages/posts' ] || mkdir src/pages/posts) && ([ -d 'src/images' ] || mkdir src/images) && ([ -d 'src/images/posts' ] || mkdir src/images/posts) && npm run sync:all && astro build"
@@ -29,7 +30,7 @@
   "dependencies": {
     "@astrojs/mdx": "^4.1.0",
     "@astrojs/react": "^4.2.1",
-    "@astrojs/svelte": "^7.0.5",
+    "@astrojs/svelte": "^7.0.7",
     "@astrojs/tailwind": "^6.0.0",
     "@aws-sdk/client-s3": "^3.540.0",
     "@aws-sdk/s3-request-presigner": "^3.540.0",
@@ -44,7 +45,8 @@
     "dotenv": "^16.4.5",
     "flowbite": "^2.3.0",
     "flowbite-svelte": "^0.48.4",
-    "flowbite-svelte-blocks": "^1.1.1",
+    "flowbite-svelte-blocks": "^1.1.4",
+    "flowbite-svelte-icons": "^2.1.0",
     "flowbite-typography": "^1.0.3",
     "image-type": "^5.2.0",
     "lodash": "^4.17.21",
@@ -54,7 +56,7 @@
     "node-fetch": "^3.3.2",
     "nodemailer": "^6.10.0",
     "notion-to-md": "^3.1.1",
-    "prettier-plugin-svelte": "^3.2.3",
+    "prettier-plugin-svelte": "^3.3.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-markdown": "^9.0.1",
@@ -64,14 +66,12 @@
     "remark-gfm": "^4.0.0",
     "rimraf": "^5.0.7",
     "sharp": "^0.33.4",
-    "svelte": "^5.20.1",
-    "svelte-carousel": "^1.0.25",
+    "svelte": "^5.25.3",
     "tailwind-merge": "^2.3.0",
     "tailwindcss": "^3.4.3",
     "tailwindcss-animated": "^1.0.1",
     "tinycolor2": "^1.6.0",
-    "vite": "^6.1.0",
-    "flowbite-svelte-icons": "^2.0.3"
+    "vite": "^6.1.0"
   },
   "devDependencies": {
     "@tailwindcss/typography": "^0.5.13",

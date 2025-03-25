@@ -3,42 +3,90 @@ import imageType from "image-type";
 import crypto from "crypto";
 import fs from "fs";
 
-const IMAGE_PATH = `src/images/posts`;
+const IMAGE_PATHS = {
+  posts: 'src/images/posts',
+  projects: 'src/images/projects'
+};
+
+const DEFAULT_IMAGE_PATH = IMAGE_PATHS.posts;
 
 // IMPORTANT: This bit is required to allow dynamic importing of images via Astro & Vite
 // postImageImport allows dynamically import images from local filesystem via Vite with variable names
 export async function postImageImport(imageFileName) {
-  // Image paths must be relative, and end with file extension to work in Vite build process
-  // See https://github.com/rollup/plugins/tree/master/packages/dynamic-import-vars#meta
+  if (!imageFileName) {
+    console.warn("No image filename provided");
+    return null;
+  }
+
+  // Check if the image is an S3 URL
+  if (imageFileName.startsWith('http://') || imageFileName.startsWith('https://')) {
+    // Extract format from URL or use default
+    const format = path.extname(imageFileName).slice(1) || 'jpg';
+    
+    // Check if it's an S3 URL with size info
+    const sizeMatch = imageFileName.match(/-(\d+)x(\d+)\.[^.]+$/);
+    let width = 1920;
+    let height = 1080;
+
+    if (sizeMatch) {
+      width = parseInt(sizeMatch[1], 10);
+      height = parseInt(sizeMatch[2], 10);
+    }
+
+    return {
+      default: {
+        src: imageFileName,
+        width,
+        height,
+        format,
+        isS3: true
+      }
+    };
+  }
+
+  // For local images
   const filename = path.parse(imageFileName);
   const name = filename.name;
   const ext = filename.ext;
 
   if (!name) {
-    console.warn("No image, skipping", imageFileName);
-    return;
+    console.warn("No image name found in", imageFileName);
+    return null;
   }
 
-  switch (ext) {
-    case ".webp":
-      return await import(`../images/posts/${name}.webp`);
-    case ".jpg":
-      return await import(`../images/posts/${name}.jpg`);
-    case ".png":
-      return await import(`../images/posts/${name}.png`);
-    case ".svg":
-      return await import(`../images/posts/${name}.svg`);
-    case ".gif":
-      return await import(`../images/posts/${name}.gif`);
-    case ".avif":
-      return await import(`../images/posts/${name}.avif`);
-    case ".jpeg":
-      return await import(`../images/posts/${name}.jpeg`);
-    case ".bmp":
-      return await import(`../images/posts/${name}.bmp`);
-    default:
-      return await import(`../images/posts/${name}.jpg`);
+  // Create a map of supported image formats for all image directories
+  const postImages = import.meta.glob('../images/posts/*.(webp|jpg|png|svg|gif|avif|jpeg|bmp)', { eager: true });
+  const projectImages = import.meta.glob('../images/projects/*.(webp|jpg|png|svg|gif|avif|jpeg|bmp)', { eager: true });
+  
+  // Try posts directory first
+  const postPath = `../images/posts/${name}${ext}`;
+  if (postImages[postPath]) {
+    return postImages[postPath];
   }
+
+  // Try projects directory
+  const projectPath = `../images/projects/${name}${ext}`;
+  if (projectImages[projectPath]) {
+    return projectImages[projectPath];
+  }
+
+  if (images[imagePath]) {
+    return images[imagePath];
+  }
+
+  // Try with .jpg extension as fallback in both directories
+  const postJpgPath = `../images/posts/${name}.jpg`;
+  if (postImages[postJpgPath]) {
+    return postImages[postJpgPath];
+  }
+
+  const projectJpgPath = `../images/projects/${name}.jpg`;
+  if (projectImages[projectJpgPath]) {
+    return projectImages[projectJpgPath];
+  }
+
+  console.warn(`Image not found in any directory: ${name}${ext}`);
+  return null;
 
   /*
   The returned imported image results are in this format:
@@ -65,7 +113,8 @@ export function hashString(data) {
 export async function downloadImage(
   imageUrl,
   {
-    isCover = false, // Notion Cover image, displays at top of posts
+    isCover = false, // Cover image for posts or projects
+    isProject = false, // Whether this is a project image
   },
 ) {
   const response = await fetch(imageUrl);
@@ -74,8 +123,9 @@ export async function downloadImage(
   const { ext, mime } = await imageType(buffer);
 
   const fileHash = hashString(imageUrl);
-  const fileName = `${process.cwd()}/${IMAGE_PATH}/${fileHash}${isCover ? "-cover" : ""
-    }.${ext}`;
+  // Determine the appropriate image path
+  const imagePath = IMAGE_PATHS[isProject ? 'projects' : 'posts'] || DEFAULT_IMAGE_PATH;
+  const fileName = `${process.cwd()}/${imagePath}/${fileHash}${isCover ? "-cover" : ""}.${ext}`;
   console.info("Hashed Filename:", fileName);
 
   fs.writeFileSync(fileName, buffer);

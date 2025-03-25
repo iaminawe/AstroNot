@@ -54,7 +54,7 @@ const n2m = new NotionToMarkdown({
         close: '</div>'
       };
     },
-    image: (block) => {
+    image: async (block) => {
       // Special handling for images
       const { type } = block;
       const value = block[type];
@@ -72,11 +72,26 @@ const n2m = new NotionToMarkdown({
         ? value.caption[0].plain_text 
         : '';
       
-      // Return image tag with proper component import
-      return {
-        type: 'image',
-        parent: `<Image src="${imageUrl}" alt="${caption}" />`,
-      };
+      // Import the image sync function
+      const { processImageUrl } = await import('../scripts/sync-notion-images.js');
+      
+      try {
+        // Process the image and get its S3 URL
+        const s3Url = await processImageUrl(imageUrl, 'projects');
+        
+        // Return image tag with proper component import
+        return {
+          type: 'image',
+          parent: `<Image src="${s3Url}" alt="${caption}" />`,
+        };
+      } catch (error) {
+        console.error(`Error processing image ${imageUrl}:`, error);
+        // Fallback to original URL if processing fails
+        return {
+          type: 'image',
+          parent: `<Image src="${imageUrl}" alt="${caption}" />`,
+        };
+      }
     }
   }
 });
@@ -148,8 +163,16 @@ async function fetchProjectsFromNotion(forceSync = false) {
       
       // Fetch the page content
       const mdblocks = await n2m.pageToMarkdown(project.id);
-      const { parent: mdString } = n2m.toMarkdownString(mdblocks);
+      let { parent: mdString } = n2m.toMarkdownString(mdblocks);
       await delay(THROTTLE_DURATION); // Throttle to avoid rate limiting
+      
+      // Update image paths in content
+      if (mdString) {
+        mdString = mdString.replace(
+          /https:\/\/greggcoppen\.s3\.ca-central-1\.amazonaws\.com\/posts\//g,
+          'https://greggcoppen.s3.ca-central-1.amazonaws.com/projects/'
+        );
+      }
       
       // Get cover image from page cover or coverImage property
       let coverImage = "";
@@ -159,11 +182,22 @@ async function fetchProjectsFromNotion(forceSync = false) {
         coverImage = project.cover.external?.url || project.cover.file?.url || "";
       }
       
-      // If no page cover, check for coverImage property
+      // If no cover, check for coverImage property
       if (!coverImage) {
         coverImage = project.properties.coverImage?.files[0]?.file?.url || 
                     project.properties.coverImage?.files[0]?.external?.url || 
                     "";
+      }
+      
+      // Process cover image through our sync system
+      if (coverImage) {
+        try {
+          const { processImageUrl } = await import('../scripts/sync-notion-images.js');
+          coverImage = await processImageUrl(coverImage, 'projects');
+          console.log(`Processed cover image for ${title}: ${coverImage}`);
+        } catch (error) {
+          console.error(`Error processing cover image for ${title}:`, error);
+        }
       }
       
       // Update the timestamp for this project

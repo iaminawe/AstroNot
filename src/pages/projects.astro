@@ -1,6 +1,7 @@
 ---
 import { getImage } from "astro:assets";
 import Layout from "../layouts/Layout.astro";
+import { postImageImport } from "../helpers/images.mjs";
 import Tags from "../components/Tags.astro";
 import { author as authorData } from "../data/index.js";
 
@@ -35,7 +36,7 @@ const projects = await Astro.glob("./projects/*.mdx");
           class="mt-8 grid items-center gap-8 md:grid-cols-2 lg:mt-16 xl:grid-cols-3"
         >
           {/* Static Projects */}
-          {projects.map((project) => {
+          {projects.map(async (project) => {
             const { frontmatter } = project;
             let coverImageSrc = "";
             let preloadCoverImageSrc = "";
@@ -43,10 +44,31 @@ const projects = await Astro.glob("./projects/*.mdx");
 
             if (frontmatter.cover) {
               try {
-                // For external images from Notion
-                coverImageSrc = frontmatter.cover;
-                preloadCoverImageSrc = frontmatter.cover;
-                preloadCoverImageMobileSrc = frontmatter.cover;
+                const importedImage = await postImageImport(frontmatter.cover) as { default: any } | null;
+                if (importedImage?.default) {
+                  const imageFilePath = importedImage.default;
+
+                  const optimizedImage = await getImage({
+                    src: imageFilePath,
+                    width: 1400,
+                  });
+
+                  coverImageSrc = optimizedImage.src;
+
+                  preloadCoverImageSrc = (await getImage({
+                    src: imageFilePath,
+                    width: 1920,
+                    height: 1080,
+                  })).src;
+
+                  preloadCoverImageMobileSrc = (await getImage({
+                    src: imageFilePath,
+                    width: 720,
+                    height: 480,
+                  })).src;
+                } else {
+                  console.warn(`Failed to import cover image for project: ${frontmatter.slug}`);
+                }
               } catch (error) {
                 console.error(`Error processing image for ${frontmatter.title}:`, error);
               }
