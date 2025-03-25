@@ -70,7 +70,7 @@ if (fs.existsSync(MANIFEST_FILE)) {
 }
 
 // Regular expressions to match Notion image URLs and local Notion paths
-const NOTION_URL_REGEX = /https:\/\/(?:prod-files-secure\.s3\.us-west-2\.amazonaws\.com|s3\.us-west-2\.amazonaws\.com)\/[^"'\s)]+/g;
+const NOTION_URL_REGEX = /https:\/\/(?:prod-files-secure\.s3\.us-west-2\.amazonaws\.com|s3\.us-west-2\.amazonaws\.com|greggcoppen\.s3\.ca-central-1\.amazonaws\.com)\/[^"'\s)]+/g;
 const LOCAL_NOTION_PATH_REGEX = /[\"\']*\/images\/notion\/([^"'\s)]+)[\"\']*/g;
 
 /**

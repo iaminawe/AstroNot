@@ -188,8 +188,14 @@ AstroNot uses GitHub Actions for automated deployment:
    - Generated content is stored in:
      - `src/pages/posts/` - Blog posts as MDX
      - `src/data/` - JSON files for other content
-   - Run `pnpm run sync:all` locally to update content
-   - Commit the generated files to the repository
+   - Images are:
+     - Downloaded during sync
+     - Uploaded to S3
+     - Referenced via S3 URLs in content
+   - Run `pnpm run sync:notion` locally to:
+     - Sync content from Notion
+     - Upload new images to S3
+   - Commit the generated files (except images) to the repository
 
 3. **Deployment Workflow**:
    - Triggers automatically on push to main branch
