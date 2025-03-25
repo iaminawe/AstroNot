@@ -192,8 +192,10 @@ async function fetchProjectsFromNotion(forceSync = false) {
       // Process cover image through our sync system
       if (coverImage) {
         try {
-          const { processImageUrl } = await import('../scripts/sync-notion-images.js');
-          coverImage = await processImageUrl(coverImage, 'projects');
+          // Import the entire module to access the processImageUrl function
+          const syncModule = await import('./sync-notion-images.js');
+          // Ensure we're passing 'projects' as the type to get the correct S3 prefix
+          coverImage = await syncModule.processImageUrl(coverImage, 'projects');
           console.log(`Processed cover image for ${title}: ${coverImage}`);
         } catch (error) {
           console.error(`Error processing cover image for ${title}:`, error);
@@ -284,13 +286,23 @@ async function generateProjectFiles() {
       
       // Always create the file if it doesn't exist, or update if modified, or force sync if no projects exist
       if (!fileExists || needsSync('project', id, last_edited_time, forceSync)) {
+        // Ensure cover image has the correct projects prefix
+        let finalCoverImage = coverImage;
+        if (finalCoverImage && finalCoverImage.includes('greggcoppen.s3') && !finalCoverImage.includes('/projects/')) {
+          // If it's an S3 URL but missing the projects prefix, add it
+          const urlParts = finalCoverImage.split('.com/');
+          if (urlParts.length === 2) {
+            finalCoverImage = `${urlParts[0]}.com/projects/${urlParts[1]}`;
+            console.log(`Fixed S3 URL prefix for ${title}: ${finalCoverImage}`);
+          }
+        }
         // Create frontmatter
         const frontmatter = `---
 layout: "../../layouts/ProjectLayout.astro"
 id: "${id}"
 slug: "${slug}"
 title: "${title.replace(/"/g, '\"')}"
-cover: "${coverImage}"
+cover: "${finalCoverImage}"
 tags: ${JSON.stringify(tags)}
 created_time: ${created_time}
 last_edited_time: ${last_edited_time}

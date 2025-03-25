@@ -156,7 +156,7 @@ async function optimizeImage(imageBuffer, contentType) {
   }
 }
 
-async function processImageUrl(url, type = 'posts') {
+export async function processImageUrl(url, type = 'posts') {
   try {
     // Download the image first to get its content hash
     const imageBuffer = await downloadImage(url);
@@ -192,7 +192,8 @@ async function processImageUrl(url, type = 'posts') {
         await uploadImageToS3(optimizedBuffer, filename, contentType, type);
         console.log(`Uploaded new optimized image to S3: ${filename} (${type})`);
       }
-      const s3Url = getS3ImageUrl(filename);
+      // Pass the type to getS3ImageUrl to ensure correct prefix is used
+      const s3Url = getS3ImageUrl(filename, type);
       imageManifest[url] = {
         filename,
         contentType,

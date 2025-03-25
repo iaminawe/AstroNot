@@ -152,9 +152,12 @@ export const imageExistsInS3 = async (filename) => {
 /**
  * Get the public URL for an image in S3
  * @param {string} filename - The filename in S3
+ * @param {string} type - The type of image (posts, projects, etc.)
  * @returns {string} - The public URL
  */
-export const getS3ImageUrl = (filename) => {
-  const key = imagePrefix ? `${imagePrefix}/${filename}` : filename;
+export const getS3ImageUrl = (filename, type = 'posts') => {
+  // Use type-specific prefix if available, fallback to default prefix
+  const prefix = S3_PREFIXES[type] || imagePrefix;
+  const key = prefix ? `${prefix}/${filename}` : filename;
   return `https://${bucketName}.s3.${s3Config.region}.amazonaws.com/${key}`;
 };
