@@ -20,6 +20,30 @@ export async function postImageImport(imageFileName) {
 
   // Check if the image is an S3 URL
   if (imageFileName.startsWith('http://') || imageFileName.startsWith('https://')) {
+    // Check if it's an S3 URL and ensure it has the correct prefix
+    if (imageFileName.includes('.s3.') || imageFileName.includes('s3.amazonaws.com')) {
+      // Determine if this is likely a project or post image based on filename or URL
+      const isProjectImage = imageFileName.includes('/project-') || imageFileName.includes('/projects/');
+      const isPostImage = imageFileName.includes('-cover') || imageFileName.includes('/posts/');
+      
+      // Add the correct prefix if missing
+      if (isProjectImage && !imageFileName.includes('/projects/')) {
+        const urlParts = imageFileName.split('/');
+        const filename = urlParts[urlParts.length - 1];
+        const bucketName = process.env.S3_BUCKET_NAME || 'greggcoppen';
+        const region = process.env.S3_REGION || 'ca-central-1';
+        imageFileName = `https://${bucketName}.s3.${region}.amazonaws.com/projects/${filename}`;
+        console.log(`Added projects prefix to S3 URL: ${imageFileName}`);
+      } else if (isPostImage && !imageFileName.includes('/posts/')) {
+        const urlParts = imageFileName.split('/');
+        const filename = urlParts[urlParts.length - 1];
+        const bucketName = process.env.S3_BUCKET_NAME || 'greggcoppen';
+        const region = process.env.S3_REGION || 'ca-central-1';
+        imageFileName = `https://${bucketName}.s3.${region}.amazonaws.com/posts/${filename}`;
+        console.log(`Added posts prefix to S3 URL: ${imageFileName}`);
+      }
+    }
+    
     // Extract format from URL or use default
     const format = path.extname(imageFileName).slice(1) || 'jpg';
     
@@ -102,23 +126,40 @@ export async function postImageImport(imageFileName) {
     return normalizeLocalImage(projectImages[projectJpgPath]);
   }
 
-  console.warn(`Image not found in any directory: ${name}${ext}`);
-  return null;
-
-  /*
-  The returned imported image results are in this format:
-
-  {
-    default: {
-      src: '/@fs/Users/json/Projects/astronot/src/images/posts/4f9edb242363447c8ed31c88e86fcb1766a93d2b938bf25c2528d52da4dc478b-cover.jpg?origWidth=1500&origHeight=1397&origFormat=jpg',
-      width: 1500,
-      height: 1397,
-      format: 'jpg',
-      orientation: 1
-    },
-    [Symbol(Symbol.toStringTag)]: 'Module'
+  // If we couldn't find the image and we're in a build environment with DISABLE_NOTION_CONNECTIONS set,
+  // provide a fallback S3 URL so the build can continue
+  if (process.env.DISABLE_NOTION_CONNECTIONS === 'true') {
+    console.warn(`Image not found, providing fallback for build: ${name}${ext}`);
+    
+    // Check if this is a cover image from the filename
+    const isCoverImage = name.includes('-cover');
+    
+    // Determine if this is likely a project or post image
+    const isProjectImage = name.includes('project-');
+    const type = isProjectImage ? 'projects' : 'posts';
+    
+    // Create a fallback S3 URL with the correct prefix
+    const bucketName = process.env.S3_BUCKET_NAME || 'greggcoppen';
+    const region = process.env.S3_REGION || 'ca-central-1';
+    const prefix = isProjectImage ? 
+      (process.env.S3_PROJECTS_PREFIX || 'projects') : 
+      (process.env.S3_POSTS_PREFIX || 'posts');
+    
+    const s3Url = `https://${bucketName}.s3.${region}.amazonaws.com/${prefix}/${name}${ext}`;
+    
+    console.log(`Generated fallback S3 URL: ${s3Url}`);
+    
+    return {
+      default: {
+        src: s3Url,
+        width: 1920,
+        height: 1080,
+        format: ext.slice(1) || 'jpg',
+        isS3: true
+      }
+    };
   }
-  */
+  throw new Error(`Image not found in any directory: ${name}${ext}`);
 }
 
 export function hashString(data) {
