@@ -157,7 +157,31 @@ async function optimizeImage(imageBuffer, contentType) {
 }
 
 export async function processImageUrl(url, type = 'posts') {
+  // If DISABLE_NOTION_CONNECTIONS is set and the URL is already an S3 URL, just return it
+  if (process.env.DISABLE_NOTION_CONNECTIONS === 'true' && url && (
+    url.includes('.s3.') || 
+    url.includes('s3.amazonaws.com')
+  )) {
+    console.log(`Skipping image processing for S3 URL during build: ${url}`);
+    // Ensure the URL has the correct prefix
+    const prefix = S3_PREFIXES[type] || imagePrefix;
+    if (!url.includes(`/${prefix}/`) && prefix) {
+      // Add the correct prefix to the URL
+      const urlParts = url.split('.com/');
+      if (urlParts.length === 2) {
+        return `${urlParts[0]}.com/${prefix}/${urlParts[1]}`;
+      }
+    }
+    return url;
+  }
+  
   try {
+    // Skip downloading if DISABLE_NOTION_CONNECTIONS is true
+    if (process.env.DISABLE_NOTION_CONNECTIONS === 'true') {
+      console.log(`Skipping image download during build: ${url}`);
+      return url;
+    }
+    
     // Download the image first to get its content hash
     const imageBuffer = await downloadImage(url);
     const contentType = getContentTypeFromUrl(url);

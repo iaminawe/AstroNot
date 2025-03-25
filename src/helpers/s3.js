@@ -29,8 +29,13 @@ const S3_PREFIXES = {
 // Default image prefix (for backward compatibility)
 const imagePrefix = process.env.S3_IMAGE_PREFIX || '';
 
-// Check if S3 credentials are configured
+// Check if S3 credentials are configured and if Notion connections are allowed
 export const isS3Configured = () => {
+  // If DISABLE_NOTION_CONNECTIONS is set to true, return false to prevent S3 connections during build
+  if (process.env.DISABLE_NOTION_CONNECTIONS === 'true') {
+    return false;
+  }
+  
   return (
     process.env.AWS_ACCESS_KEY_ID &&
     process.env.AWS_SECRET_ACCESS_KEY &&
@@ -38,7 +43,7 @@ export const isS3Configured = () => {
   );
 };
 
-// Initialize S3 client if credentials are available
+// Initialize S3 client if credentials are available and Notion connections are allowed
 let s3Client = null;
 if (isS3Configured()) {
   try {
@@ -47,6 +52,8 @@ if (isS3Configured()) {
   } catch (error) {
     console.error('Error initializing S3 client:', error);
   }
+} else if (process.env.DISABLE_NOTION_CONNECTIONS === 'true') {
+  console.log('S3 client initialization skipped due to DISABLE_NOTION_CONNECTIONS=true');
 }
 
 /**
@@ -158,6 +165,12 @@ export const imageExistsInS3 = async (filename) => {
 export const getS3ImageUrl = (filename, type = 'posts') => {
   // Use type-specific prefix if available, fallback to default prefix
   const prefix = S3_PREFIXES[type] || imagePrefix;
+  
+  // If the filename already contains the prefix, don't add it again
+  if (filename && filename.includes(`/${prefix}/`)) {
+    return filename;
+  }
+  
   const key = prefix ? `${prefix}/${filename}` : filename;
   return `https://${bucketName}.s3.${s3Config.region}.amazonaws.com/${key}`;
 };

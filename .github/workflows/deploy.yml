@@ -65,6 +65,9 @@ jobs:
           S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
           S3_REGION: ${{ secrets.S3_REGION }}
           S3_IMAGE_PREFIX: ${{ secrets.S3_IMAGE_PREFIX }}
+          S3_POSTS_PREFIX: posts
+          S3_PROJECTS_PREFIX: projects
+          DISABLE_NOTION_CONNECTIONS: 'true'
         run: |
           # Create .env file with proper escaping
           cat > .env << 'EOL'
@@ -92,6 +95,9 @@ jobs:
           S3_BUCKET_NAME="${S3_BUCKET_NAME}"
           S3_REGION="${S3_REGION}"
           S3_IMAGE_PREFIX="${S3_IMAGE_PREFIX}"
+          S3_POSTS_PREFIX="${S3_POSTS_PREFIX:-posts}"
+          S3_PROJECTS_PREFIX="${S3_PROJECTS_PREFIX:-projects}"
+          DISABLE_NOTION_CONNECTIONS="true"
           EOL
 
       - name: Build site
