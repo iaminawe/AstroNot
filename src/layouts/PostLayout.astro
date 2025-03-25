@@ -16,16 +16,65 @@ const showProfileSubtitle = true; // TODO: Expose this as config option
 let optimizedDesktopCoverImage: any = null;
 let optimizedMobileCoverImage: any = null;
 
+interface S3ImageData {
+  isS3: boolean;
+  src: string;
+  width: number;
+  height: number;
+  format: string;
+}
+
+// Direct S3 URL detection
+const isS3Url = (url) => {
+  return typeof url === 'string' && (
+    url.includes('s3.') || 
+    url.includes('amazonaws.com') ||
+    url.startsWith('https://greggcoppen.s3.')
+  );
+};
+
 if (frontmatter?.cover) {
-  const { default: dynamicImg } = await postImageImport(frontmatter.cover);
-
-  optimizedDesktopCoverImage = frontmatter?.cover
-    ? await getImage({ src: dynamicImg, width: 1920, height: 1080 })
-    : "";
-
-  optimizedMobileCoverImage = frontmatter?.cover
-    ? await getImage({ src: dynamicImg, width: 720, height: 480 })
-    : "";
+  // Check if it's an S3 URL first
+  if (isS3Url(frontmatter.cover)) {
+    // For S3 URLs, bypass Astro's image optimization
+    optimizedDesktopCoverImage = {
+      src: frontmatter.cover,
+      width: 1920,
+      height: 1080
+    };
+    optimizedMobileCoverImage = {
+      src: frontmatter.cover,
+      width: 720,
+      height: 480
+    };
+  } else {
+    // For local images, use postImageImport
+    const dynamicImg = await postImageImport(frontmatter.cover);
+    
+    if (dynamicImg && typeof dynamicImg === 'object' && 'default' in dynamicImg) {
+      const imgData = dynamicImg.default;
+      
+      // Handle S3 URLs differently from local images
+      if (typeof imgData === 'object' && 'isS3' in imgData) {
+        const s3Data = imgData as S3ImageData;
+        optimizedDesktopCoverImage = {
+          src: s3Data.src,
+          width: 1920,
+          height: 1080
+        };
+        optimizedMobileCoverImage = {
+          src: s3Data.src,
+          width: 720,
+          height: 480
+        };
+      } else {
+        // Local image processing
+        const localImg = imgData as ImageMetadata;
+        optimizedDesktopCoverImage = await getImage({ src: localImg, width: 1920, height: 1080 });
+        optimizedMobileCoverImage = await getImage({ src: localImg, width: 720, height: 480 });
+      }
+    }
+  }
 }
 
 const dateStr = new Date(frontmatter.publish_date).toLocaleString("en-US", {

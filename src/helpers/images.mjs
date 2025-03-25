@@ -58,34 +58,48 @@ export async function postImageImport(imageFileName) {
   const postImages = import.meta.glob('../images/posts/*.(webp|jpg|png|svg|gif|avif|jpeg|bmp)', { eager: true });
   const projectImages = import.meta.glob('../images/projects/*.(webp|jpg|png|svg|gif|avif|jpeg|bmp)', { eager: true });
   
+  // Helper function to normalize local image data
+  const normalizeLocalImage = (imgData) => {
+    if (!imgData?.default) return null;
+    const { src, width, height, format } = imgData.default;
+    return {
+      default: {
+        src: String(src),
+        width: Number(width) || 1920,
+        height: Number(height) || 1080,
+        format: String(format || path.extname(src).slice(1) || 'jpg')
+      }
+    };
+  };
+
   // Try posts directory first
   const postPath = `../images/posts/${name}${ext}`;
   if (postImages[postPath]) {
-    return postImages[postPath];
+    return normalizeLocalImage(postImages[postPath]);
   }
 
   // Try projects directory
   const projectPath = `../images/projects/${name}${ext}`;
   if (projectImages[projectPath]) {
-    return projectImages[projectPath];
+    return normalizeLocalImage(projectImages[projectPath]);
   }
 
   // Try to find the image in any directory
   const allImages = { ...postImages, ...projectImages };
   const imagePath = `../images/${name}${ext}`;
   if (allImages[imagePath]) {
-    return allImages[imagePath];
+    return normalizeLocalImage(allImages[imagePath]);
   }
 
   // Try with .jpg extension as fallback in both directories
   const postJpgPath = `../images/posts/${name}.jpg`;
   if (postImages[postJpgPath]) {
-    return postImages[postJpgPath];
+    return normalizeLocalImage(postImages[postJpgPath]);
   }
 
   const projectJpgPath = `../images/projects/${name}.jpg`;
   if (projectImages[projectJpgPath]) {
-    return projectImages[projectJpgPath];
+    return normalizeLocalImage(projectImages[projectJpgPath]);
   }
 
   console.warn(`Image not found in any directory: ${name}${ext}`);
