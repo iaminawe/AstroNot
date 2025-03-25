@@ -136,6 +136,9 @@ async function optimizeImage(imageBuffer, contentType) {
           .webp({ quality: 80 })
           .withMetadata();
         break;
+      case 'gif':
+        // Do not optimize GIFs
+        return imageBuffer;
       default:
         // For other formats, just resize if needed
         break;
@@ -157,50 +160,47 @@ async function optimizeImage(imageBuffer, contentType) {
 }
 
 export async function processImageUrl(url, type = 'posts') {
-  // If DISABLE_NOTION_CONNECTIONS is set and the URL is already an S3 URL, just return it
-  if (process.env.DISABLE_NOTION_CONNECTIONS === 'true' && url && (
-    url.includes('.s3.') || 
-    url.includes('s3.amazonaws.com')
-  )) {
-    console.log(`Skipping image processing for S3 URL during build: ${url}`);
-    // Ensure the URL has the correct prefix
-    const prefix = S3_PREFIXES[type] || imagePrefix;
-    if (!url.includes(`/${prefix}/`) && prefix) {
-      // Add the correct prefix to the URL
-      const urlParts = url.split('.com/');
-      if (urlParts.length === 2) {
-        return `${urlParts[0]}.com/${prefix}/${urlParts[1]}`;
-      }
-    }
-    return url;
+  console.log(`processImageUrl called for: ${url} (type: ${type})`);
+  console.log(`processImageUrl called for: ${url} (type: ${type})`);
+  if (!url) {
+    console.warn("No URL provided");
+    return null;
   }
-  
-  try {
-    // Skip downloading if DISABLE_NOTION_CONNECTIONS is true
-    if (process.env.DISABLE_NOTION_CONNECTIONS === 'true') {
-      console.log(`Skipping image download during build: ${url}`);
+
+  // Check if the URL is already an S3 URL
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    if (url.includes('.s3.') || url.includes('s3.amazonaws.com')) {
+      console.log(`URL is already an S3 URL: ${url}`);
       return url;
     }
-    
-    // Download the image first to get its content hash
+  }
+
+  try {
+    console.log(`Downloading image: ${url}`);
     const imageBuffer = await downloadImage(url);
-    const contentType = getContentTypeFromUrl(url);
-    const extension = mime.extension(contentType) || 'jpg';
+    console.log(`Image downloaded successfully: ${url}`);
 
-    // Generate filename based on content hash
-    const filename = generateImageFilename(imageBuffer, { extension, type });
+    if (!imageBuffer) {
+      console.warn(`Failed to download image: ${url}`);
+      return null;
+    }
 
-    // Check if we've already processed this content hash
+    const filename = generateImageFilename(imageBuffer, { type });
+    const extension = mime.extension(getContentTypeFromUrl(url)) || 'jpg';
+    const s3Key = `${type}/${filename}.${extension}`;
+    console.log(`Generated S3 key: ${s3Key}`);
+
+    // Check if the image already exists in the manifest
     const existingEntry = Object.entries(imageManifest).find(([_, data]) => 
       data.filename === filename
     );
 
     if (existingEntry) {
-      console.log(`Using existing image for ${url} -> ${filename}`);
+      console.log(`Image already exists in manifest: ${s3Key}`);
       // Update manifest to map this URL to the existing file
       imageManifest[url] = {
         filename,
-        contentType,
+        contentType: getContentTypeFromUrl(url),
         lastUsed: Date.now(),
         path: existingEntry[1].path
       };
@@ -208,19 +208,26 @@ export async function processImageUrl(url, type = 'posts') {
     }
 
     // Optimize the image
-    const optimizedBuffer = await optimizeImage(imageBuffer, contentType);
+    console.log(`Optimizing image: ${url}`);
+    const optimizedBuffer = await optimizeImage(imageBuffer, getContentTypeFromUrl(url));
+    console.log(`Image optimized successfully: ${url}`);
+
+    if (!optimizedBuffer) {
+      console.warn(`Failed to optimize image: ${url}`);
+      return null;
+    }
 
     if (storageMode === 's3') {
       // Upload to S3 if not exists
       if (!await imageExistsInS3(filename)) {
-        await uploadImageToS3(optimizedBuffer, filename, contentType, type);
+        await uploadImageToS3(optimizedBuffer, filename, getContentTypeFromUrl(url), type);
         console.log(`Uploaded new optimized image to S3: ${filename} (${type})`);
       }
       // Pass the type to getS3ImageUrl to ensure correct prefix is used
       const s3Url = getS3ImageUrl(filename, type);
       imageManifest[url] = {
         filename,
-        contentType,
+        contentType: getContentTypeFromUrl(url),
         lastUsed: Date.now(),
         path: s3Url
       };
@@ -235,15 +242,15 @@ export async function processImageUrl(url, type = 'posts') {
       const publicPath = `/images/notion/${filename}`;
       imageManifest[url] = {
         filename,
-        contentType,
+        contentType: getContentTypeFromUrl(url),
         lastUsed: Date.now(),
         path: publicPath
       };
       return publicPath;
     }
   } catch (error) {
-    console.error(`Error processing image from ${url}:`, error);
-    return url; // Return the original URL if processing fails
+    console.error(`Error processing image from ${url}: ${error}`);
+    return null;
   }
 }
 

@@ -1,7 +1,11 @@
 import path from "path";
+import { fileURLToPath } from 'url';
 import imageType from "image-type";
 import crypto from "crypto";
 import fs from "fs";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const IMAGE_PATHS = {
   posts: 'src/images/posts',
@@ -13,15 +17,31 @@ const DEFAULT_IMAGE_PATH = IMAGE_PATHS.posts;
 // IMPORTANT: This bit is required to allow dynamic importing of images via Astro & Vite
 // postImageImport allows dynamically import images from local filesystem via Vite with variable names
 export async function postImageImport(imageFileName) {
+  console.log(`postImageImport called for: ${imageFileName}`);
   if (!imageFileName) {
     console.warn("No image filename provided");
     return null;
   }
 
+  console.log('Starting postImageImport process');
+
   // Check if the image is an S3 URL
+  // Helper function to check if URL is an S3 URL
+  function isS3Url(url) {
+    return typeof url === 'string' && (url.includes('.s3.') || url.includes('s3.amazonaws.com'));
+  }
+
+  // Helper function to get S3 URL with correct prefix
+  function getS3Url(filename, type = 'posts') {
+    const bucketName = process.env.S3_BUCKET_NAME || 'greggcoppen';
+    const region = process.env.S3_REGION || 'ca-central-1';
+    const prefix = type === 'projects' ? 'projects' : 'posts';
+    return `https://${bucketName}.s3.${region}.amazonaws.com/${prefix}/${filename}`;
+  }
+
   if (imageFileName.startsWith('http://') || imageFileName.startsWith('https://')) {
-    // Check if it's an S3 URL and ensure it has the correct prefix
-    if (imageFileName.includes('.s3.') || imageFileName.includes('s3.amazonaws.com')) {
+    // Handle S3 URLs
+    if (isS3Url(imageFileName)) {
       // Determine if this is likely a project or post image based on filename or URL
       const isProjectImage = imageFileName.includes('/project-') || imageFileName.includes('/projects/');
       const isPostImage = imageFileName.includes('-cover') || imageFileName.includes('/posts/');
@@ -63,7 +83,8 @@ export async function postImageImport(imageFileName) {
         width,
         height,
         format,
-        isS3: true
+        isS3: isS3Url(imageFileName),
+        isRemote: true
       }
     };
   }
@@ -76,6 +97,95 @@ export async function postImageImport(imageFileName) {
   if (!name) {
     console.warn("No image name found in", imageFileName);
     return null;
+  }
+
+  // Special handling for GIF files
+  if (ext.toLowerCase() === '.gif') {
+    console.log(`Processing GIF file: ${imageFileName}`);
+    
+    // Extract just the filename from the path
+    const filenameOnly = path.basename(imageFileName);
+    console.log(`GIF filename only: ${filenameOnly}`);
+    
+    // In build mode or if the file is already an S3 URL, return the S3 URL
+    if (process.env.DISABLE_NOTION_CONNECTIONS === 'true' || isS3Url(imageFileName)) {
+      const s3Url = isS3Url(imageFileName) ? imageFileName : getS3Url(filenameOnly);
+      console.log(`Using S3 URL for GIF: ${s3Url}`);
+      
+      return {
+        default: {
+          src: s3Url,
+          width: 800,
+          height: 600,
+          format: 'gif',
+          isS3: true
+        }
+      };
+    }
+    
+    // For non-build mode, find and upload the GIF
+    // Try multiple potential locations
+    const possiblePaths = [
+      path.join(__dirname, '..', 'images', 'posts', filenameOnly),
+      path.join(process.cwd(), 'src', 'images', 'posts', filenameOnly),
+      imageFileName // Original path as fallback
+    ];
+    
+    let foundPath = null;
+    
+    for (const pathToCheck of possiblePaths) {
+      console.log(`Checking if GIF exists at: ${pathToCheck}`);
+      if (fs.existsSync(pathToCheck)) {
+        console.log(`GIF found at: ${pathToCheck}`);
+        foundPath = pathToCheck;
+        break;
+      }
+    }
+    
+    if (foundPath) {
+      try {
+        // Get the file buffer
+        const fileBuffer = fs.readFileSync(foundPath);
+        
+        // Direct S3 upload
+        try {
+          const { uploadImageToS3 } = await import('../helpers/s3.js');
+          const contentType = 'image/gif';
+          const uploadedUrl = await uploadImageToS3(fileBuffer, filenameOnly, contentType, 'posts');
+          console.log(`Successfully uploaded GIF directly to S3: ${uploadedUrl}`);
+          
+          return {
+            default: {
+              src: uploadedUrl,
+              width: 800,
+              height: 600,
+              format: 'gif',
+              isS3: true
+            }
+          };
+        } catch (error) {
+          console.error(`Error uploading GIF to S3: ${error.message}`);
+          
+          // Fallback to pre-constructed URL
+          const s3Url = getS3Url(filenameOnly);
+          console.log(`Fallback to pre-constructed S3 URL: ${s3Url}`);
+          
+          return {
+            default: {
+              src: s3Url,
+              width: 800,
+              height: 600,
+              format: 'gif',
+              isS3: true
+            }
+          };
+        }
+      } catch (error) {
+        console.error(`Error processing GIF: ${error.message}`);
+      }
+    } else {
+      console.warn(`GIF not found in any checked paths. Filename: ${filenameOnly}`);
+    }
   }
 
   // Create a map of supported image formats for all image directories
@@ -97,20 +207,24 @@ export async function postImageImport(imageFileName) {
   };
 
   // Try posts directory first
-  const postPath = `../images/posts/${name}${ext}`;
-  if (postImages[postPath]) {
+  const absolutePostsImagesDir = path.join(__dirname, '..', 'images', 'posts');
+  const postPath = path.join(absolutePostsImagesDir, `${name}${ext}`);
+  console.log(`Checking if image exists in posts directory: ${postPath}`);
+  if (fs.existsSync(postPath) && postImages[postPath]) {
+    console.log(`Image found in posts directory: ${postPath}`);
     return normalizeLocalImage(postImages[postPath]);
   }
 
   // Try projects directory
-  const projectPath = `../images/projects/${name}${ext}`;
-  if (projectImages[projectPath]) {
+  const absoluteProjectsImagesDir = path.join(__dirname, '..', 'images', 'projects');
+  const projectPath = path.join(absoluteProjectsImagesDir, `${name}${ext}`);
+  if (fs.existsSync(projectPath) && projectImages[projectPath]) {
     return normalizeLocalImage(projectImages[projectPath]);
   }
 
   // Try to find the image in any directory
   const allImages = { ...postImages, ...projectImages };
-  const imagePath = `../images/${name}${ext}`;
+  const imagePath = path.join(__dirname, '..', 'images', 'posts', `${name}${ext}`);
   if (allImages[imagePath]) {
     return normalizeLocalImage(allImages[imagePath]);
   }
@@ -149,15 +263,26 @@ export async function postImageImport(imageFileName) {
     
     console.log(`Generated fallback S3 URL: ${s3Url}`);
     
-    return {
-      default: {
-        src: s3Url,
-        width: 1920,
-        height: 1080,
-        format: ext.slice(1) || 'jpg',
-        isS3: true
-      }
-    };
+    // Construct the local image path
+    const localImagePath = path.join(absolutePostsImagesDir, `${name}${ext}`);
+
+    if (fs.existsSync(localImagePath)) {
+      console.log(`Image exists locally. Uploading to S3: ${localImagePath}`);
+      // Call processImageUrl to upload the local image to S3
+      const uploadedS3Url = await processImageUrl(s3Url, type);
+      
+      return {
+        default: {
+          src: uploadedS3Url,
+          width: 1920,
+          height: 1080,
+          format: ext.slice(1) || 'jpg',
+          isS3: true
+        }
+      };
+    } else {
+      console.warn(`Image does not exist locally: ${localImagePath}`);
+    }
   }
   throw new Error(`Image not found in any directory: ${name}${ext}`);
 }
