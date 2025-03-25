@@ -119,14 +119,21 @@ AstroNot is designed to be deployed as a static site. The recommended deployment
       - `S3_REGION`: S3 region
       - `S3_IMAGE_PREFIX`: S3 image prefix (optional)
 
-2. **Automatic Deployment**:
+2. **Content Management**:
+   - All Notion content should be synced and committed locally
+   - Generated content is stored in:
+     - `src/pages/posts/` - Blog posts as MDX
+     - `src/data/` - JSON files for other content
+   - Run `pnpm run sync:all` locally to update content
+   - Commit the generated files to the repository
+
+3. **Automatic Deployment**:
    The workflow in `.github/workflows/deploy.yml` will:
    - Trigger on push to main branch
    - Set up Node.js environment
    - Install dependencies
    - Configure environment variables
-   - Sync Notion content
-   - Build the site
+   - Build the site using committed content
    - Deploy to a deployment branch
 
 3. **Manual Deployment**:

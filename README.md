@@ -183,16 +183,47 @@ AstroNot uses GitHub Actions for automated deployment:
       S3_IMAGE_PREFIX=your_image_prefix
       ```
 
-2. The deployment workflow will:
-   - Trigger automatically on push to main branch
-   - Sync all Notion content
-   - Build the static site
-   - Deploy to a deployment branch
+2. **Content Management**:
+   - All Notion content should be synced and committed locally
+   - Generated content is stored in:
+     - `src/pages/posts/` - Blog posts as MDX
+     - `src/data/` - JSON files for other content
+   - Run `pnpm run sync:all` locally to update content
+   - Commit the generated files to the repository
 
-3. To manually trigger deployment:
+3. **Deployment Workflow**:
+   - Triggers automatically on push to main branch
+   - Uses committed content for builds
+   - Builds the static site
+   - Deploys to a deployment branch
+
+4. **Manual Deployment**:
    - Go to your repository's Actions tab
-   - Select "Deploy to Production" workflow
+   - Select the "Deploy to Production" workflow
    - Click "Run workflow"
+
+### Alternative Deployment Methods
+
+1. **Netlify/Vercel**:
+   - Connect your repository
+   - Set build command to `pnpm run build`
+   - Set publish directory to `dist`
+   - Add required environment variables
+
+2. **Local Deployment**:
+   ```bash
+   # Ensure all environment variables are set in .env
+   pnpm run sync:all    # Sync all content from Notion
+   pnpm run build       # Build the static site
+   ```
+
+### Deployment Commands
+
+| Command                   | Action                                                |
+| :------------------------ | :---------------------------------------------------- |
+| `pnpm run sync:all`       | Sync all content from Notion                          |
+| `pnpm run build`          | Build the static site to `./dist/`                    |
+| `pnpm run preview`        | Preview the build locally                             |
 
 ### Alternative: Coolify Webhook Deployment
 

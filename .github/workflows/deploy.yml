@@ -94,9 +94,6 @@ jobs:
           S3_IMAGE_PREFIX="${S3_IMAGE_PREFIX}"
           EOL
 
-      - name: Sync Notion content
-        run: pnpm run sync:all
-
       - name: Build site
         run: pnpm run build
 

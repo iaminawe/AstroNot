@@ -22,7 +22,7 @@
     "sync:images": "node src/scripts/sync-notion-images.js",
     "sync:images:local": "node src/scripts/sync-notion-images.js --local",
     "sync:images:s3": "node src/scripts/sync-notion-images.js --s3",
-    "sync:notion": "node src/scripts/sync-all-notion.js",
+    "sync:notion": "node src/scripts/sync-all-notion.js && npm run sync:images:s3",
     "sync:all": "npm run sync:notion",
     "generate": "rimraf dist/** && ([ -d 'dist' ] || mkdir dist) && ([ -d 'dist/images' ] || mkdir dist/images) && ([ -d 'src/pages/posts' ] || mkdir src/pages/posts) && ([ -d 'src/images' ] || mkdir src/images) && ([ -d 'src/images/posts' ] || mkdir src/images/posts) && npm run sync:all && astro build"
   },
