@@ -72,16 +72,20 @@ AstroNot includes `pnpm` out of the box, and supports `bun`! Feel free to replac
 
 ### 🆕 New Features
 
-1. **Improved Social Media Integration**
-   - Streamlined social media icons using flowbite-svelte-icons v2.0.3
-   - Support for GitHub, Twitter/X, and LinkedIn icons
-   - Automatic icon validation during build process
+1. **S3 Image Storage Integration**
+   - Automatic image migration to S3
+   - Configurable S3 bucket and region settings
+   - Intelligent image sync with timestamp tracking
+   - Local image cleanup after successful S3 upload
+   - Support for public and private bucket configurations
 
 2. **Enhanced Image Processing**
-   - Automatic image optimization and WebP conversion
+   - Automatic image optimization using Sharp
+   - WebP conversion for modern browsers
    - Multiple responsive sizes generated for each image
-   - Improved error handling for Notion image downloads
-   - Automatic retry mechanism for failed image downloads
+   - Improved error handling for image processing
+   - Automatic retry mechanism for failed uploads
+   - Efficient caching with configurable cache headers
 
 3. **Build System Improvements**
    - Comprehensive build process documentation
@@ -89,33 +93,57 @@ AstroNot includes `pnpm` out of the box, and supports `bun`! Feel free to replac
    - Post-build verification steps
    - Automatic content synchronization with Notion
    - Improved error reporting and logging
+   - S3 configuration validation
 
 4. **Developer Experience**
    - New build instructions in memory-bank
    - Clearer error messages for common issues
    - Streamlined deployment process
    - Better handling of environment variables
+   - S3 configuration guide
 
 5. **Performance Optimizations**
-   - Improved image loading and optimization
+   - CDN-ready image delivery via S3
+   - Optimized image loading and processing
    - Better handling of social media icons
    - Reduced bundle size through icon optimization
    - Enhanced build-time optimizations
 
-## ⚙️ Notion Setup
+## ⚙️ Setup
 
+### Notion Setup
 - [Clone this Notion CMS starter template](https://jsonmartin.notion.site/aea5cd29dea84e77b14f2f7c769eeb61?v=57943f457a0b44cfbcac2aaf75d2fa38&pvs=4)
 - Create a Notion "internal" integration and get the API secret key
 - Copy the database ID from the cloned Database _(open in browser; the database ID is in the URL for the database on Notion's website, before the `?v=` and after the last `/`)_
 - For enhanced Notion integration, see the [notion-setup.md](notion-setup.md) file for detailed instructions on setting up additional databases
 
+### AWS S3 Setup
+1. Create an S3 bucket for storing images
+2. Configure bucket permissions:
+   - For public buckets: Enable public access and add a bucket policy
+   - For private buckets: Configure CloudFront for secure access
+3. Create an IAM user with S3 access
+4. Get the AWS access key and secret key
+
 ## 🚀 Installation
 
-- Clone this repo
-- Install with your package manager of choice _(`pnpm`, `bun`, etc...)_: `pnpm install`
-- Move `.env.example` to `.env` and add your Notion API key and database ID
-- Run `pnpm sync` to sync Notion Content for the first time
-- Run `pnpm dev` to start development server
+1. Clone this repo
+2. Install with your package manager of choice _(`pnpm`, `bun`, etc...)_: `pnpm install`
+3. Move `.env.example` to `.env` and configure:
+   ```env
+   # Notion Configuration
+   VITE_NOTION_KEY=your_notion_api_key
+   VITE_DATABASE_ID=your_database_id
+
+   # AWS S3 Configuration
+   AWS_ACCESS_KEY_ID=your_aws_access_key
+   AWS_SECRET_ACCESS_KEY=your_aws_secret_key
+   S3_BUCKET_NAME=your_bucket_name
+   S3_REGION=your_bucket_region
+   S3_IMAGE_PREFIX=optional_prefix_for_images
+   ```
+4. Run `pnpm sync` to sync Notion content and images
+5. Run `pnpm dev` to start development server
 
 ## 🔄 Notion Sync System
 
@@ -141,7 +169,10 @@ npm run sync:social-links # Sync social links
 npm run sync:work-experience # Sync work experience
 npm run sync:author    # Sync author information
 npm run sync:about     # Sync about page content
-npm run sync:images    # Sync images from Notion
+
+# Image Management
+npm run sync:images    # Sync images from Notion to S3
+npm run sync:images:s3 # Force sync all images to S3
 ```
 
 ### How Timestamp Tracking Works
@@ -152,12 +183,23 @@ The timestamp tracking system maintains timestamps for:
 
 2. **Individual Items**: Each item (post, project, service, etc.) has its own timestamp that records when it was last updated.
 
+3. **Images**: Each image has its own timestamp and manifest entry to track:
+   - Last sync time
+   - S3 upload status
+   - Optimization status
+   - Local file cleanup status
+
 When syncing content:
 
 1. The system checks the last sync time for the collection.
 2. It only fetches items from Notion that have been updated since that time.
 3. After processing each item, it updates the item's timestamp.
 4. After processing all items in a collection, it updates the collection timestamp.
+5. For images:
+   - New images are automatically uploaded to S3
+   - Existing images are checked against their timestamps
+   - Local images are cleaned up after successful S3 upload
+   - Image references in content are updated to use S3 URLs
 
 This approach significantly reduces the number of API calls to Notion and speeds up the sync process, especially for sites with a lot of content.
 

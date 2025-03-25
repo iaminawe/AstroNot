@@ -178,6 +178,19 @@ async function generateCategoriesData() {
 
     const { categories, flat } = await fetchCategoriesFromNotion(forceSync);
     
+    // If no updates were found and we have existing data, keep the existing data
+    if (!forceSync && flat.length === 0 && fs.existsSync(OUTPUT_FILE)) {
+      try {
+        const existingData = JSON.parse(fs.readFileSync(OUTPUT_FILE, 'utf8'));
+        if (existingData.flat && existingData.flat.length > 0) {
+          console.log('No updates found, keeping existing categories data');
+          return;
+        }
+      } catch (e) {
+        console.error('Error reading existing categories data:', e);
+      }
+    }
+
     fs.writeFileSync(OUTPUT_FILE, JSON.stringify({
       hierarchy: categories,
       flat: flat

@@ -23,11 +23,21 @@
      - About page content
      - Images
 
-3. **Image Processing**
-   - Images from Notion are automatically downloaded and processed during build
-   - Check for any 403 Forbidden errors in image downloads
-   - Images are optimized and converted to WebP format
-   - Multiple sizes are generated for responsive images
+3. **Image Storage and Processing**
+   - Images can be stored in S3 (recommended) or locally
+   - S3 Configuration:
+     - Set up an S3 bucket and IAM user
+     - Configure bucket permissions (public or private)
+     - Set required environment variables
+   - Image Processing:
+     - Automatic optimization using Sharp
+     - WebP conversion for modern browsers
+     - Multiple responsive sizes
+     - Efficient caching with configurable headers
+     - Automatic retry for failed uploads
+   - Local Cleanup:
+     - Images are removed after successful S3 upload
+     - Reduces Git repository size
 
 ## Build Process
 
@@ -60,10 +70,17 @@
 
 ## Important Notes
 
-- The build process includes both content synchronization and static site generation
+- The build process includes content synchronization, image processing, and static site generation
 - Notion content is fetched using an efficient timestamp tracking system that only syncs updated content
-- The timestamp tracking system maintains timestamps for both collections and individual items
-- Images are optimized and converted to WebP format automatically
+- The timestamp tracking system maintains timestamps for:
+  - Collections (services, testimonials, etc.)
+  - Individual items (posts, projects, etc.)
+  - Images (sync time, S3 status, optimization status)
+- Image processing includes:
+  - Automatic S3 upload with configurable settings
+  - WebP conversion and optimization
+  - Multiple responsive sizes
+  - Local cleanup after S3 upload
 - Social media icons must be available in flowbite-svelte-icons v2.0.3
 - Consider updating Astro.glob usage to import.meta.glob in future updates
 
@@ -139,10 +156,21 @@ VITE_NOTION_KEY=secret_xxx   # Same as NOTION_KEY, needed for client components
 DATABASE_ID=xxx              # Main posts database ID
 ```
 
-#### Optional Build-Time Variables
-These variables enable enhanced Notion integration features:
-```
-# Author Information
+#### Required Environment Variables
+
+```bash
+# Notion Configuration
+VITE_NOTION_KEY=xxx          # Notion API key
+VITE_DATABASE_ID=xxx         # Main database ID
+
+# AWS S3 Configuration (Required for S3 image storage)
+AWS_ACCESS_KEY_ID=xxx        # AWS access key ID
+AWS_SECRET_ACCESS_KEY=xxx    # AWS secret access key
+S3_BUCKET_NAME=xxx           # S3 bucket name
+S3_REGION=xxx                # S3 bucket region
+S3_IMAGE_PREFIX=xxx          # Optional: prefix for image keys
+
+# Optional Notion Integration
 AUTHOR_DB_ID=xxx            # Author database ID
 VITE_AUTHOR_DB_ID=xxx      # Same as AUTHOR_DB_ID, for client components
 

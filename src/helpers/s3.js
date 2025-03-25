@@ -20,8 +20,8 @@ const s3Config = {
 // S3 bucket name
 const bucketName = process.env.S3_BUCKET_NAME;
 
-// Image prefix in S3 bucket
-const imagePrefix = process.env.S3_IMAGE_PREFIX || 'notion-images';
+// Image prefix in S3 bucket (empty for root)
+const imagePrefix = process.env.S3_IMAGE_PREFIX || '';
 
 // Check if S3 credentials are configured
 export const isS3Configured = () => {
@@ -44,15 +44,14 @@ if (isS3Configured()) {
 }
 
 /**
- * Generate a unique filename for an image based on its URL
- * @param {string} url - The URL of the image
+ * Generate a unique filename for an image based on its content
+ * @param {Buffer} imageBuffer - The image data as a buffer
  * @param {string} extension - The file extension (default: jpg)
  * @returns {string} - The generated filename
  */
-export const generateImageFilename = (url, extension = 'jpg') => {
-  const hash = crypto.createHash('md5').update(url).digest('hex');
-  const fileExtension = extension || url.split('.').pop().split('?')[0] || 'jpg';
-  return `notion-${hash}.${fileExtension}`;
+export const generateImageFilename = (imageBuffer, extension = 'jpg') => {
+  const hash = crypto.createHash('sha256').update(imageBuffer).digest('hex');
+  return `notion-${hash}.${extension}`;
 };
 
 /**
@@ -67,7 +66,7 @@ export const uploadImageToS3 = async (imageBuffer, filename, contentType = 'imag
     throw new Error('S3 is not configured');
   }
 
-  const key = `${imagePrefix}/${filename}`;
+  const key = imagePrefix ? `${imagePrefix}/${filename}` : filename;
 
   try {
     const command = new PutObjectCommand({
@@ -75,8 +74,7 @@ export const uploadImageToS3 = async (imageBuffer, filename, contentType = 'imag
       Key: key,
       Body: imageBuffer,
       ContentType: contentType,
-      CacheControl: 'max-age=31536000', // Cache for 1 year
-      ACL: 'public-read'
+      CacheControl: 'max-age=31536000' // Cache for 1 year
     });
 
     await s3Client.send(command);
@@ -123,7 +121,7 @@ export const imageExistsInS3 = async (filename) => {
     return false;
   }
 
-  const key = `${imagePrefix}/${filename}`;
+  const key = imagePrefix ? `${imagePrefix}/${filename}` : filename;
 
   try {
     const command = new GetObjectCommand({
@@ -148,5 +146,6 @@ export const imageExistsInS3 = async (filename) => {
  * @returns {string} - The public URL
  */
 export const getS3ImageUrl = (filename) => {
-  return `https://${bucketName}.s3.${s3Config.region}.amazonaws.com/${imagePrefix}/${filename}`;
+  const key = imagePrefix ? `${imagePrefix}/${filename}` : filename;
+  return `https://${bucketName}.s3.${s3Config.region}.amazonaws.com/${key}`;
 };

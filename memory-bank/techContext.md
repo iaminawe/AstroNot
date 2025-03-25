@@ -3,12 +3,14 @@
 ## Technologies Used
 - **Astro**: A modern framework for building fast, content-focused websites.
 - **Notion API**: Used for syncing Notion content with the website.
+- **AWS S3**: Cloud storage for optimized images with CDN capabilities.
+- **AWS SDK**: JavaScript SDK for interacting with AWS services.
 - **Flowbite**: A UI framework built on top of Tailwind CSS.
 - **Svelte**: A front-end framework that compiles components to highly efficient vanilla JavaScript at build time.
 - **Tailwind CSS**: A utility-first CSS framework for rapid UI development.
 - **pnpm**: The package manager used for managing dependencies.
 - **Vite**: The build tool used by Astro for fast development and optimized builds.
-- **Sharp**: A high-performance image processing library.
+- **Sharp**: A high-performance image processing library for optimization and format conversion.
 - **Notion-to-MD**: A library for converting Notion content to Markdown.
 - **Marked**: A markdown parser and compiler for rendering Markdown content consistently.
 - **Reading Time**: A library for calculating reading time based on content length.
@@ -55,16 +57,33 @@
   - About content
   - Social Links
   - Home Hero content
+- **Image Storage**:
+  - Images stored in AWS S3
+  - Optimized and converted to WebP
+  - Multiple responsive sizes
+  - CDN-ready delivery
+  - Local cleanup after S3 upload
+  - Manifest tracking for sync status
 - **Notion Integration**:
   - Notion API is used only during build process
   - Generates static JSON files from Notion databases
+  - Handles image migration to S3
   - Site Settings currently uses hardcoded defaults
 
 ## Integration Points
+- **AWS S3**: Integrated for image storage and delivery
+  - Automatic image upload and optimization
+  - CDN-ready delivery
+  - Configurable caching and permissions
+  - Local cleanup after upload
+- **Sharp**: Used for image processing
+  - WebP conversion
+  - Multiple responsive sizes
+  - Quality optimization
+  - Format conversion
 - **Flowbite**: Integrated with Tailwind CSS for UI components
 - **Svelte**: Used for interactive elements and dynamic content
 - **Tailwind CSS**: Used for styling the website
-- **Sharp**: Used for image optimization
 - **Notion-to-MD**: Used for converting Notion content to Markdown during build
 - **Marked**: Used for rendering Markdown content consistently
 - **Reading Time**: Used for calculating reading time based on content length
@@ -76,7 +95,17 @@
 - **Local Development**: Developers use `pnpm dev` to start the local development server.
 - **Building**: The website is built using `pnpm build` for production.
 - **Syncing Notion Content**: Notion content is synced using `npm run sync:notion` or its alias `npm run sync:all`, with timestamp tracking to only sync updated content.
-- **Individual Content Syncing**: Specific content types can be synced individually using commands like `npm run sync:services`, `npm run sync:testimonials`, etc.
+- **Individual Content Syncing**: Specific content types can be synced individually using commands like:
+  - `npm run sync:services` - Sync services
+  - `npm run sync:testimonials` - Sync testimonials
+  - `npm run sync:images` - Sync images to S3
+  - `npm run sync:images:s3` - Force sync all images to S3
+- **Image Processing Workflow**:
+  1. Images are downloaded from Notion
+  2. Processed and optimized using Sharp
+  3. Uploaded to S3 with proper caching headers
+  4. Local copies are cleaned up
+  5. Content references are updated to S3 URLs
 - **Generating Production Build**: The production build is generated using `pnpm generate`.
 
 ## Testing and Quality Assurance
