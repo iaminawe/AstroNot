@@ -1,0 +1,107 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main  # or your default branch
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment: production  # Use production environment for secrets
+    env:
+      NODE_ENV: production
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for git commands
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Create .env file
+        env:
+          NOTION_KEY: ${{ secrets.NOTION_KEY }}
+          DATABASE_ID: ${{ secrets.DATABASE_ID }}
+          AUTHOR_DB_ID: ${{ secrets.AUTHOR_DB_ID }}
+          VITE_PROJECTS_DB_ID: ${{ secrets.VITE_PROJECTS_DB_ID }}
+          VITE_SERVICES_DB_ID: ${{ secrets.VITE_SERVICES_DB_ID }}
+          VITE_TESTIMONIALS_DB_ID: ${{ secrets.VITE_TESTIMONIALS_DB_ID }}
+          VITE_WORK_EXPERIENCE_DB_ID: ${{ secrets.VITE_WORK_EXPERIENCE_DB_ID }}
+          VITE_ABOUT_DB_ID: ${{ secrets.VITE_ABOUT_DB_ID }}
+          VITE_SOCIAL_LINKS_DB_ID: ${{ secrets.VITE_SOCIAL_LINKS_DB_ID }}
+          VITE_HOME_HERO_DB_ID: ${{ secrets.VITE_HOME_HERO_DB_ID }}
+          VITE_SITE_SETTINGS_DB_ID: ${{ secrets.VITE_SITE_SETTINGS_DB_ID }}
+          VITE_CATEGORIES_DB_ID: ${{ secrets.VITE_CATEGORIES_DB_ID }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
+          S3_REGION: ${{ secrets.S3_REGION }}
+          S3_IMAGE_PREFIX: ${{ secrets.S3_IMAGE_PREFIX }}
+        run: |
+          # Create .env file with proper escaping
+          cat > .env << 'EOL'
+          # Notion API Configuration
+          NOTION_KEY="${NOTION_KEY}"
+          VITE_NOTION_KEY="${NOTION_KEY}"
+          DATABASE_ID="${DATABASE_ID}"
+          AUTHOR_DB_ID="${AUTHOR_DB_ID}"
+          VITE_AUTHOR_DB_ID="${AUTHOR_DB_ID}"
+
+          # Notion Database IDs
+          VITE_PROJECTS_DB_ID="${VITE_PROJECTS_DB_ID}"
+          VITE_SERVICES_DB_ID="${VITE_SERVICES_DB_ID}"
+          VITE_TESTIMONIALS_DB_ID="${VITE_TESTIMONIALS_DB_ID}"
+          VITE_WORK_EXPERIENCE_DB_ID="${VITE_WORK_EXPERIENCE_DB_ID}"
+          VITE_ABOUT_DB_ID="${VITE_ABOUT_DB_ID}"
+          VITE_SOCIAL_LINKS_DB_ID="${VITE_SOCIAL_LINKS_DB_ID}"
+          VITE_HOME_HERO_DB_ID="${VITE_HOME_HERO_DB_ID}"
+          VITE_SITE_SETTINGS_DB_ID="${VITE_SITE_SETTINGS_DB_ID}"
+          VITE_CATEGORIES_DB_ID="${VITE_CATEGORIES_DB_ID}"
+
+          # AWS S3 Configuration
+          AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}"
+          AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY}"
+          S3_BUCKET_NAME="${S3_BUCKET_NAME}"
+          S3_REGION="${S3_REGION}"
+          S3_IMAGE_PREFIX="${S3_IMAGE_PREFIX}"
+          EOL
+
+      - name: Sync Notion content
+        run: npm run sync:all
+
+      - name: Build site
+        run: npm run build
+
+      - name: Configure Git
+        run: |
+          git config --global user.name 'GitHub Actions'
+          git config --global user.email 'actions@github.com'
+
+      - name: Deploy to deployment branch
+        run: |
+          # Create and switch to a new temporary branch
+          git checkout --orphan temp_deploy
+
+          # Remove all files from git tracking
+          git rm -rf --cached .
+
+          # Add only the dist directory
+          git add dist/ -f
+
+          # Create a commit with the new build
+          git commit -m "Deploy: $(date +%Y-%m-%d_%H-%M-%S)"
+
+          # Delete the old deployment branch if it exists and create a new one
+          git push origin --delete deployment || true
+          git branch -m deployment
+          git push origin deployment --force

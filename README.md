@@ -145,6 +145,80 @@ AstroNot includes `pnpm` out of the box, and supports `bun`! Feel free to replac
 4. Run `pnpm sync` to sync Notion content and images
 5. Run `pnpm dev` to start development server
 
+## 🚀 Deployment
+
+AstroNot uses GitHub Actions for automated deployment:
+
+### Setting Up GitHub Actions
+
+1. Configure GitHub repository settings:
+
+   a. Under "Settings > Environments":
+      - Create a new environment named "production"
+
+   b. Under "Settings > Secrets and variables > Actions", add:
+
+      **Notion Configuration:**
+      ```
+      NOTION_KEY=your_notion_api_key
+      DATABASE_ID=your_database_id
+      AUTHOR_DB_ID=your_author_db_id
+      VITE_PROJECTS_DB_ID=your_projects_db_id
+      VITE_SERVICES_DB_ID=your_services_db_id
+      VITE_TESTIMONIALS_DB_ID=your_testimonials_db_id
+      VITE_WORK_EXPERIENCE_DB_ID=your_work_experience_db_id
+      VITE_ABOUT_DB_ID=your_about_db_id
+      VITE_SOCIAL_LINKS_DB_ID=your_social_links_db_id
+      VITE_HOME_HERO_DB_ID=your_home_hero_db_id
+      VITE_SITE_SETTINGS_DB_ID=your_site_settings_db_id
+      VITE_CATEGORIES_DB_ID=your_categories_db_id
+      ```
+
+      **AWS S3 Configuration:**
+      ```
+      AWS_ACCESS_KEY_ID=your_aws_access_key
+      AWS_SECRET_ACCESS_KEY=your_aws_secret_key
+      S3_BUCKET_NAME=your_bucket_name
+      S3_REGION=your_bucket_region
+      S3_IMAGE_PREFIX=your_image_prefix
+      ```
+
+2. The deployment workflow will:
+   - Trigger automatically on push to main branch
+   - Sync all Notion content
+   - Build the static site
+   - Deploy to a deployment branch
+
+3. To manually trigger deployment:
+   - Go to your repository's Actions tab
+   - Select "Deploy to Production" workflow
+   - Click "Run workflow"
+
+### Alternative: Coolify Webhook Deployment
+
+You can also deploy using Coolify's webhook system:
+
+1. **In Coolify Dashboard**:
+   - Go to your project settings
+   - Add a new webhook under "Webhooks"
+   - Copy the webhook URL
+
+2. **In GitHub**:
+   - Go to repository settings
+   - Add webhook under "Settings > Webhooks"
+   - Set payload URL to Coolify webhook URL
+   - Set content type to `application/json`
+   - Select "Just the push event"
+   - Enable the webhook
+
+3. **Configure Environment**:
+   Add the same environment variables in Coolify:
+   - All Notion API keys and database IDs
+   - AWS S3 configuration
+   - Any other required environment variables
+
+Coolify will automatically deploy when you push to main branch.
+
 ## 🔄 Notion Sync System
 
 AstroNot includes an efficient timestamp tracking system that only syncs content that has been updated since the last sync, reducing API calls and sync time.
