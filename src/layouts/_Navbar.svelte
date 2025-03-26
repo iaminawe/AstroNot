@@ -18,16 +18,14 @@
 
   let activeUrl: string = "";
   let innerWidth: number;
-  let baseUrl = import.meta.env.BASE_URL || '/';
-
   const name = "Gregg Coppen"; // TODO: Make this a param, site config
 
   $: isHamburgerMenu = innerWidth < HAMBURGER_BREAKPOINT;
 
-  // Ensure links are properly prefixed with base URL
+  // Ensure links are properly formatted
   const getUrl = (path: string) => {
-    // Remove any double slashes that might occur when joining paths
-    return `${baseUrl}${path}`.replace(/\/+/g, '/');
+    // Remove any leading slashes and ensure single slash at start
+    return '/' + path.replace(/^\/+/, '');
   };
 
   const handleClickOutside = throttle((event) => {
