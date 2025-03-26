@@ -16,8 +16,8 @@ const DEFAULT_IMAGE_PATH = IMAGE_PATHS.posts;
 
 // IMPORTANT: This bit is required to allow dynamic importing of images via Astro & Vite
 // postImageImport allows dynamically import images from local filesystem via Vite with variable names
-export async function postImageImport(imageFileName) {
-  console.log(`postImageImport called for: ${imageFileName}`);
+export async function postImageImport(imageFileName, imageType = 'posts') {
+  console.log(`postImageImport called for: ${imageFileName} (type: ${imageType})`);
   if (!imageFileName) {
     console.warn("No image filename provided");
     return null;
@@ -78,20 +78,38 @@ export async function postImageImport(imageFileName) {
   }
 
   if (imageFileName.startsWith('http://') || imageFileName.startsWith('https://')) {
-    // Handle S3 URLs
-    if (isS3Url(imageFileName)) {
-      // Determine if this is likely a project or post image based on filename or URL
-      const isProjectImage = imageFileName.includes('/project-') || imageFileName.includes('/projects/');
-      const filename = getFilenameFromUrl(imageFileName);
-      
-      // Ensure URL has correct prefix
-      if (isProjectImage && !imageFileName.includes('/projects/')) {
-        imageFileName = getS3Url(filename, 'projects');
-        console.log(`Added projects prefix to S3 URL: ${imageFileName}`);
-      } else if (!imageFileName.includes('/posts/')) {
-        imageFileName = getS3Url(filename, 'posts');
-        console.log(`Added posts prefix to S3 URL: ${imageFileName}`);
+  // Handle S3 URLs
+  if (isS3Url(imageFileName)) {
+    // Keep the original URL structure if it already has a valid prefix
+    if (imageFileName.includes('/projects/') || imageFileName.includes('/posts/')) {
+      console.log(`Using existing S3 URL with prefix: ${imageFileName}`);
+      return {
+        default: {
+          src: imageFileName,
+          width: 1920,
+          height: 1080,
+          format: path.extname(imageFileName).slice(1) || 'jpg',
+          isS3: true
+        }
+      };
+    }
+
+    // For URLs without a prefix, determine the type and add the appropriate prefix
+    const filename = getFilenameFromUrl(imageFileName);
+    const isProjectImage = filename.startsWith('project-');
+    const type = isProjectImage ? 'projects' : 'posts';
+    const s3Url = getS3Url(filename, type);
+    console.log(`Generated S3 URL with ${type} prefix: ${s3Url}`);
+    
+    return {
+      default: {
+        src: s3Url,
+        width: 1920,
+        height: 1080,
+        format: path.extname(filename).slice(1) || 'jpg',
+        isS3: true
       }
+    };
     }
     
     // Extract format from URL or use default
@@ -105,21 +123,6 @@ export async function postImageImport(imageFileName) {
     if (sizeMatch) {
       width = parseInt(sizeMatch[1], 10);
       height = parseInt(sizeMatch[2], 10);
-    }
-
-    // For build mode or S3 URLs, return the full URL
-    if (process.env.DISABLE_NOTION_CONNECTIONS === 'true' || isS3Url(imageFileName)) {
-      console.log(`Returning S3/remote URL: ${imageFileName}`);
-      return {
-        default: {
-          src: imageFileName,
-          width,
-          height,
-          format: format.toLowerCase(),
-          isS3: isS3Url(imageFileName),
-          isRemote: true
-        }
-      };
     }
 
     // For local development with non-S3 URLs

@@ -23,19 +23,13 @@ const bucketName = process.env.S3_BUCKET_NAME;
 // Image prefixes in S3 bucket
 const S3_PREFIXES = {
   posts: process.env.S3_POSTS_PREFIX || 'posts',
-  projects: process.env.S3_PROJECTS_PREFIX || 'projects'
+  projects: process.env.S3_PROJECTS_PREFIX || 'projects',
+  author: process.env.S3_AUTHOR_PREFIX || 'author',
+  about: process.env.S3_ABOUT_PREFIX || 'about'
 };
 
-// Default image prefix (for backward compatibility)
-const imagePrefix = process.env.S3_IMAGE_PREFIX || '';
-
-// Check if S3 credentials are configured and if Notion connections are allowed
+// Check if S3 credentials are configured
 export const isS3Configured = () => {
-  // If DISABLE_NOTION_CONNECTIONS is set to true, return false to prevent S3 connections during build
-  if (process.env.DISABLE_NOTION_CONNECTIONS === 'true') {
-    return false;
-  }
-  
   return (
     process.env.AWS_ACCESS_KEY_ID &&
     process.env.AWS_SECRET_ACCESS_KEY &&
@@ -43,17 +37,43 @@ export const isS3Configured = () => {
   );
 };
 
-// Initialize S3 client if credentials are available and Notion connections are allowed
+// Initialize S3 client if credentials are available
 let s3Client = null;
+
+// Create folders in S3 if they don't exist
+async function ensureS3Folders() {
+  if (!isS3Configured() || !s3Client) {
+    return;
+  }
+
+  for (const [type, prefix] of Object.entries(S3_PREFIXES)) {
+    try {
+      const folderKey = `${prefix}/.keep`;
+      const folderCommand = new PutObjectCommand({
+        Bucket: bucketName,
+        Key: folderKey,
+        Body: '',
+      });
+      await s3Client.send(folderCommand);
+      console.log(`Created/verified S3 folder: ${prefix}/`);
+    } catch (error) {
+      console.error(`Error creating/verifying S3 folder ${prefix}/: ${error.message}`);
+    }
+  }
+}
+
+// Default image prefix (for backward compatibility)
+const imagePrefix = process.env.S3_IMAGE_PREFIX || '';
+
+// Initialize S3 client and ensure folders exist
 if (isS3Configured()) {
   try {
     s3Client = new S3Client(s3Config);
     console.log('S3 client initialized successfully');
+    ensureS3Folders().catch(console.error);
   } catch (error) {
     console.error('Error initializing S3 client:', error);
   }
-} else if (process.env.DISABLE_NOTION_CONNECTIONS === 'true') {
-  console.log('S3 client initialization skipped due to DISABLE_NOTION_CONNECTIONS=true');
 }
 
 /**
@@ -64,7 +84,20 @@ if (isS3Configured()) {
  */
 export const generateImageFilename = (imageBuffer, { extension = 'jpg', type = 'posts', isCover = false } = {}) => {
   const hash = crypto.createHash('sha256').update(imageBuffer).digest('hex');
-  const prefix = type === 'projects' ? 'project' : 'notion';
+  let prefix;
+  switch (type) {
+    case 'projects':
+      prefix = 'project';
+      break;
+    case 'author':
+      prefix = 'author';
+      break;
+    case 'about':
+      prefix = 'about';
+      break;
+    default:
+      prefix = 'notion';
+  }
   return `${prefix}-${hash}${isCover ? '-cover' : ''}.${extension}`;
 };
 
@@ -80,9 +113,34 @@ export const uploadImageToS3 = async (imageBuffer, filename, contentType = 'imag
     throw new Error('S3 is not configured');
   }
 
-  // Use type-specific prefix if available, fallback to default prefix
-  const prefix = S3_PREFIXES[type] || imagePrefix;
+  // Determine the correct prefix based on the type and filename
+  let prefix;
+  if (type === 'author' || filename.startsWith('author-')) {
+    prefix = S3_PREFIXES.author;
+  } else if (type === 'about' || filename.startsWith('about-')) {
+    prefix = S3_PREFIXES.about;
+  } else if (type === 'projects' || filename.startsWith('project-')) {
+    prefix = S3_PREFIXES.projects;
+  } else {
+    prefix = S3_PREFIXES.posts;
+  }
+
+  // Create an empty object in the folder to ensure it exists
+  try {
+    const folderKey = `${prefix}/.keep`;
+    const folderCommand = new PutObjectCommand({
+      Bucket: bucketName,
+      Key: folderKey,
+      Body: '',
+    });
+    await s3Client.send(folderCommand);
+    console.log(`Created/verified folder: ${prefix}/`);
+  } catch (error) {
+    console.error(`Error creating folder ${prefix}/: ${error.message}`);
+  }
+
   const key = prefix ? `${prefix}/${filename}` : filename;
+  console.log(`Uploading image to S3 with key: ${key} (type: ${type})`);
 
   try {
     const command = new PutObjectCommand({
@@ -90,8 +148,7 @@ export const uploadImageToS3 = async (imageBuffer, filename, contentType = 'imag
       Key: key,
       Body: imageBuffer,
       ContentType: contentType,
-      CacheControl: 'max-age=31536000', // Cache for 1 year
-      ACL: 'public-read' // Ensure public read access
+      CacheControl: 'max-age=31536000' // Cache for 1 year
     });
 
     await s3Client.send(command);
@@ -133,12 +190,25 @@ export const getSignedS3Url = async (key, expiresIn = 3600) => {
  * @param {string} filename - The filename to check
  * @returns {Promise<boolean>} - Whether the image exists in S3
  */
-export const imageExistsInS3 = async (filename) => {
+export const imageExistsInS3 = async (filename, type = 'posts') => {
   if (!isS3Configured() || !s3Client) {
     return false;
   }
 
-  const key = imagePrefix ? `${imagePrefix}/${filename}` : filename;
+  // Determine the correct prefix based on the type and filename
+  let prefix;
+  if (type === 'author' || filename.startsWith('author-')) {
+    prefix = S3_PREFIXES.author;
+  } else if (type === 'about' || filename.startsWith('about-')) {
+    prefix = S3_PREFIXES.about;
+  } else if (type === 'projects' || filename.startsWith('project-')) {
+    prefix = S3_PREFIXES.projects;
+  } else {
+    prefix = S3_PREFIXES.posts;
+  }
+
+  const key = prefix ? `${prefix}/${filename}` : filename;
+  console.log(`Checking if image exists in S3: ${key} (type: ${type})`);
 
   try {
     const command = new GetObjectCommand({
@@ -150,6 +220,23 @@ export const imageExistsInS3 = async (filename) => {
     return true;
   } catch (error) {
     if (error.name === 'NoSuchKey') {
+      // If not found in the determined prefix, try the default prefix as fallback
+      if (prefix !== imagePrefix && imagePrefix) {
+        const fallbackKey = `${imagePrefix}/${filename}`;
+        try {
+          const fallbackCommand = new GetObjectCommand({
+            Bucket: bucketName,
+            Key: fallbackKey
+          });
+          await s3Client.send(fallbackCommand);
+          return true;
+        } catch (fallbackError) {
+          if (fallbackError.name !== 'NoSuchKey') {
+            console.error(`Error checking fallback location in S3: ${filename}`, fallbackError);
+          }
+          return false;
+        }
+      }
       return false;
     }
     console.error(`Error checking if image exists in S3: ${filename}`, error);

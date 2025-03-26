@@ -12,7 +12,7 @@ import {
   generateImageFilename, 
   uploadImageToS3, 
   imageExistsInS3, 
-  getS3ImageUrl 
+  getS3ImageUrl
 } from '../helpers/s3.js';
 import { needsSync, updateTimestamp, getCollectionLastSync, updateCollectionTimestamp } from './notion-timestamp-tracker.js';
 
@@ -161,21 +161,50 @@ async function optimizeImage(imageBuffer, contentType) {
 
 export async function processImageUrl(url, type = 'posts') {
   console.log(`processImageUrl called for: ${url} (type: ${type})`);
-  console.log(`processImageUrl called for: ${url} (type: ${type})`);
   if (!url) {
     console.warn("No URL provided");
     return null;
   }
 
-  // Check if the URL is already an S3 URL
-  if (url.startsWith('http://') || url.startsWith('https://')) {
-    if (url.includes('.s3.') || url.includes('s3.amazonaws.com')) {
-      console.log(`URL is already an S3 URL: ${url}`);
-      return url;
-    }
-  }
-
   try {
+    // Check if the URL is already an S3 URL from our own bucket
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      // Get our bucket name from environment
+      const ourBucketName = process.env.S3_BUCKET_NAME;
+      const ourRegion = process.env.S3_REGION || 'ca-central-1';
+      
+      // Only consider it "already processed" if it's from our own S3 bucket
+      const ownBucketUrl = `${ourBucketName}.s3.${ourRegion}.amazonaws.com`;
+      if (url.includes(ownBucketUrl)) {
+        // Extract the current path parts
+        const urlParts = url.split(ownBucketUrl + '/')[1].split('/');
+        const currentPrefix = urlParts[0];
+        const currentFilename = urlParts[urlParts.length - 1];
+        
+        // Check if we need to move the file to a different prefix
+        if (type !== currentPrefix) {
+          console.log(`Moving file from ${currentPrefix} to ${type} prefix`);
+          // Download the file from current location
+          const imageBuffer = await downloadImage(url);
+          if (imageBuffer) {
+            const contentType = getContentTypeFromUrl(url);
+            // Upload to new location with correct prefix
+            const newUrl = await uploadImageToS3(imageBuffer, currentFilename, contentType, type);
+            return newUrl;
+          }
+        } else {
+          console.log(`URL is already in correct S3 location: ${url}`);
+          return url;
+        }
+      }
+    }
+    
+    // Notion's temporary S3 URLs need to be processed
+    if ((url.includes('.s3.') || url.includes('s3.amazonaws.com')) && 
+        (url.includes('X-Amz-Expires') || url.includes('prod-files-secure'))) {
+      console.log(`Processing temporary Notion S3 URL: ${url}`);
+      // Continue processing to download and upload to our bucket
+    }
     console.log(`Downloading image: ${url}`);
     const imageBuffer = await downloadImage(url);
     console.log(`Image downloaded successfully: ${url}`);
@@ -270,9 +299,16 @@ async function migrateLocalImage(filename) {
       return null;
     }
 
-    // Determine if this is a project image based on the file path
-    const isProjectImage = filename.includes('/projects/');
-    const type = isProjectImage ? 'projects' : 'posts';
+    // Determine the image type based on the filename and path
+    let type = 'posts';
+    if (filename.startsWith('author-') || filename.includes('/author/')) {
+      type = 'author';
+    } else if (filename.startsWith('about-') || filename.includes('/about/')) {
+      type = 'about';
+    } else if (filename.includes('/projects/') || filename.startsWith('project-')) {
+      type = 'projects';
+    }
+    console.log(`Determined image type: ${type} for file: ${filename}`);
 
     const imageBuffer = fs.readFileSync(localPath);
     const contentType = mime.lookup(filename) || 'image/jpeg';
@@ -313,10 +349,69 @@ async function processJsonFile(filePath) {
     
     let updatedContent = content;
 
+    // Determine the type based on the file being processed
+    let type = 'posts';
+    const filename = path.basename(filePath);
+    if (filename === 'author.json') {
+      type = 'author';
+      console.log('Processing author images');
+    } else if (filename === 'about.json') {
+      type = 'about';
+      console.log('Processing about page images');
+    }
+
     // Process Notion URLs
     for (const url of urls) {
-      const newUrl = await processImageUrl(url);
-      updatedContent = updatedContent.replace(new RegExp(url.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), newUrl);
+      // Skip URLs that are already in our S3 bucket with the correct prefix
+      if (url.includes(`${process.env.S3_BUCKET_NAME}.s3.${process.env.S3_REGION}`)) {
+        const hasCorrectPrefix = (type === 'author' && url.includes('/author/')) ||
+                               (type === 'about' && url.includes('/about/'));
+        if (hasCorrectPrefix) {
+          console.log(`URL is already in correct S3 location: ${url}`);
+          continue;
+        }
+      }
+
+      // Look for original Notion URL in manifest
+      const manifestEntry = Object.entries(imageManifest).find(([notionUrl, data]) => 
+        data.path === url || url === notionUrl
+      );
+
+      if (manifestEntry) {
+        const [notionUrl, data] = manifestEntry;
+        console.log(`Found original Notion URL in manifest: ${notionUrl}`);
+        try {
+          console.log(`Downloading from original Notion URL: ${notionUrl}`);
+          const imageBuffer = await downloadImage(notionUrl);
+          
+          if (imageBuffer) {
+            const contentType = getContentTypeFromUrl(notionUrl);
+            const filename = generateImageFilename(imageBuffer, { type });
+            console.log(`Uploading image to S3 with type ${type}: ${filename}`);
+            const newUrl = await uploadImageToS3(imageBuffer, filename, contentType, type);
+            
+            if (newUrl) {
+              updatedContent = updatedContent.replace(
+                new RegExp(url.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), 
+                newUrl
+              );
+              console.log(`Successfully processed image: ${newUrl}`);
+            }
+          }
+        } catch (error) {
+          console.error(`Error processing image from manifest: ${error}`);
+        }
+      } else {
+        console.log(`No manifest entry found for URL: ${url}`);
+        // Try to process the URL directly through processImageUrl
+        const newUrl = await processImageUrl(url, type);
+        if (newUrl) {
+          updatedContent = updatedContent.replace(
+            new RegExp(url.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), 
+            newUrl
+          );
+        }
+      }
     }
 
     // Process local paths

@@ -4,9 +4,13 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { config } from 'dotenv';
 import { Client } from "@notionhq/client";
+import { processImageUrl } from './sync-notion-images.js';
 
 // Load environment variables from .env file
 config();
+
+// Force S3 storage mode
+process.argv.push('--s3');
 
 // Get the directory name of the current module
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -74,10 +78,17 @@ async function fetchAuthorFromNotion() {
 
     const authorPage = results[0];
     
+    // Get and process avatar image
+    let avatarUrl = authorPage.properties.avatar?.files[0]?.file?.url || authorPage.properties.avatar?.files[0]?.external?.url || "";
+    if (avatarUrl) {
+      avatarUrl = await processImageUrl(avatarUrl, 'author');
+      console.log("Processed avatar URL:", avatarUrl);
+    }
+
     const authorData = {
       name: authorPage.properties.name?.title[0]?.plain_text || "",
       bio: authorPage.properties.bio?.rich_text[0]?.plain_text || "",
-      avatar: authorPage.properties.avatar?.files[0]?.file?.url || authorPage.properties.avatar?.files[0]?.external?.url || ""
+      avatar: avatarUrl
     };
     
     console.log("Author data:", authorData);

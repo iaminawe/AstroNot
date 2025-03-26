@@ -313,8 +313,8 @@ status: "published"
 publish_date: ${created_time}
 description: "${description ? description.replace(/"/g, '\"') : ''}"
 ---
-import Image from '../../components/Image.astro';
-import BookmarkCard from '../../components/BookmarkCard.astro';
+import Image from '@components/Image.astro';
+import BookmarkCard from '@components/BookmarkCard.astro';
 
 ${content}`;
         

@@ -10,18 +10,38 @@ const {
   alt = "Blog Image",
 } = Astro.props;
 
-const relativeSrc = `../${src}`;
-const imgType = relativeSrc.split(".").pop();
-const { default: imgData } = await postImageImport(src);
-const { width, height, src: imgSrc } = imgData;
+// Determine image type from path or URL
+let imageType = 'posts';
+if (src.includes('/projects/') || src.includes('project-')) {
+  imageType = 'projects';
+} else if (src.includes('/author/') || src.includes('author-')) {
+  imageType = 'author';
+} else if (src.includes('/about/') || src.includes('about-')) {
+  imageType = 'about';
+}
+
+// Check if it's an S3 URL
+const isS3Url = typeof src === 'string' && (src.includes('.s3.') || src.includes('s3.amazonaws.com'));
+
+let imgSrc = src;
+let width = MAX_WIDTH;
+let height = Math.round(MAX_WIDTH * 0.5625); // 16:9 aspect ratio
+
+if (!isS3Url) {
+  // For local images, use postImageImport with the correct type
+  const { default: importedData } = await postImageImport(src, imageType);
+  imgSrc = importedData.src;
+  width = importedData.width;
+  height = importedData.height;
+}
 ---
 
 {
-  imgType === "bmp" ? (
-    <img src={relativeSrc} alt={alt} class={imageClass} style="will-change: opacity;" />
+  isS3Url ? (
+    <img src={imgSrc} alt={alt} class={imageClass} style="will-change: opacity;" />
   ) : (
     <AstroImage
-      src={imgData}
+      src={imgSrc}
       {alt}
       class={imageClass}
       width={width < MAX_WIDTH ? width : MAX_WIDTH}

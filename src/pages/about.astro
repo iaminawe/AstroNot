@@ -5,6 +5,7 @@ import { Badge } from "flowbite-svelte";
 import { aboutContent as configAboutContent } from "../config/about";
 import { resumeData } from "../config/resume";
 import SocialLinks from "../components/SocialLinks.svelte";
+import Image from "../components/Image.astro";
 
 // Import static data (generated during build)
 // Use try-catch to handle the case where the file doesn't exist yet
@@ -82,17 +83,11 @@ const skills = resumeData.skills || [
         >
           <div class="lg:pl-20">
             <div class="max-w-xs px-2.5 lg:max-w-none">
-              <img
-                alt={aboutContent.profileImage.alt}
-                loading="lazy"
-                width="800"
-                height="800"
-                decoding="async"
-                data-nimg="1"
-                class="aspect-square rotate-3 rounded-2xl bg-zinc-100 object-cover dark:bg-zinc-800"
-                sizes="(min-width: 1024px) 32rem 20rem"
+              <Image
                 src={aboutContent.profileImage.src}
-                style="color: transparent;"
+                alt={aboutContent.profileImage.alt}
+                MAX_WIDTH={800}
+                imageClass="aspect-square rotate-3 rounded-2xl bg-zinc-100 object-cover dark:bg-zinc-800"
               />
             </div>
           </div><div class="lg:order-first lg:row-span-2">

@@ -6,9 +6,13 @@ import { config } from 'dotenv';
 import { Client } from "@notionhq/client";
 import { NotionToMarkdown } from "notion-to-md";
 import { delay } from '../helpers/delay.mjs';
+import { processImageUrl } from './sync-notion-images.js';
 
 // Load environment variables from .env file
 config();
+
+// Force S3 storage mode
+process.argv.push('--s3');
 
 // Get the directory name of the current module
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -96,13 +100,17 @@ async function fetchAboutContentFromNotion() {
     
     console.log(`Extracted ${paragraphs.length} paragraphs from about page`);
     
-    // Get profile image
+    // Get and process profile image
     let profileImageSrc = "";
     let profileImageAlt = "Profile Image";
     
     if (aboutPage.properties.profileImage?.files?.length > 0) {
       const imageFile = aboutPage.properties.profileImage.files[0];
-      profileImageSrc = imageFile.file?.url || imageFile.external?.url || "";
+      const notionUrl = imageFile.file?.url || imageFile.external?.url || "";
+      if (notionUrl) {
+        profileImageSrc = await processImageUrl(notionUrl, 'about');
+        console.log("Processed profile image URL:", profileImageSrc);
+      }
     }
     
     if (aboutPage.properties.profileImageAlt?.rich_text?.length > 0) {
