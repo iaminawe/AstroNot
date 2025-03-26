@@ -25,10 +25,17 @@ export async function postImageImport(imageFileName) {
 
   console.log('Starting postImageImport process');
 
-  // Check if the image is an S3 URL
   // Helper function to check if URL is an S3 URL
   function isS3Url(url) {
     return typeof url === 'string' && (url.includes('.s3.') || url.includes('s3.amazonaws.com'));
+  }
+
+  // Helper function to get public URL for an image
+  function getPublicUrl(filename, type = 'posts') {
+    const bucketName = process.env.S3_BUCKET_NAME || 'greggcoppen';
+    const region = process.env.S3_REGION || 'ca-central-1';
+    const prefix = type === 'projects' ? 'projects' : 'posts';
+    return `https://${bucketName}.s3.${region}.amazonaws.com/${prefix}/${filename}`;
   }
 
   // Helper function to get S3 URL with correct prefix
@@ -39,27 +46,50 @@ export async function postImageImport(imageFileName) {
     return `https://${bucketName}.s3.${region}.amazonaws.com/${prefix}/${filename}`;
   }
 
+  // Helper function to extract filename from URL
+  function getFilenameFromUrl(url) {
+    try {
+      const urlParts = url.split('/');
+      return urlParts[urlParts.length - 1];
+    } catch (e) {
+      console.error(`Error extracting filename from URL ${url}: ${e.message}`);
+      return url;
+    }
+  }
+
+  // Handle build mode and S3 URLs
+  if (process.env.DISABLE_NOTION_CONNECTIONS === 'true') {
+    // If it's already an S3 URL, use it as is
+    if (isS3Url(imageFileName)) {
+      return imageFileName;
+    }
+    // For non-URL paths during build, construct the S3 URL
+    const filename = path.basename(imageFileName);
+    // Check for project images in multiple ways:
+    // 1. File starts with 'project-'
+    // 2. File is in a projects directory
+    // 3. URL contains /projects/
+    const isProject = (
+      filename.startsWith('project-') ||
+      imageFileName.includes('/projects/') ||
+      imageFileName.includes('\\projects\\') // Windows path support
+    );
+    return getPublicUrl(filename, isProject ? 'projects' : 'posts');
+  }
+
   if (imageFileName.startsWith('http://') || imageFileName.startsWith('https://')) {
     // Handle S3 URLs
     if (isS3Url(imageFileName)) {
       // Determine if this is likely a project or post image based on filename or URL
       const isProjectImage = imageFileName.includes('/project-') || imageFileName.includes('/projects/');
-      const isPostImage = imageFileName.includes('-cover') || imageFileName.includes('/posts/');
+      const filename = getFilenameFromUrl(imageFileName);
       
-      // Add the correct prefix if missing
+      // Ensure URL has correct prefix
       if (isProjectImage && !imageFileName.includes('/projects/')) {
-        const urlParts = imageFileName.split('/');
-        const filename = urlParts[urlParts.length - 1];
-        const bucketName = process.env.S3_BUCKET_NAME || 'greggcoppen';
-        const region = process.env.S3_REGION || 'ca-central-1';
-        imageFileName = `https://${bucketName}.s3.${region}.amazonaws.com/projects/${filename}`;
+        imageFileName = getS3Url(filename, 'projects');
         console.log(`Added projects prefix to S3 URL: ${imageFileName}`);
-      } else if (isPostImage && !imageFileName.includes('/posts/')) {
-        const urlParts = imageFileName.split('/');
-        const filename = urlParts[urlParts.length - 1];
-        const bucketName = process.env.S3_BUCKET_NAME || 'greggcoppen';
-        const region = process.env.S3_REGION || 'ca-central-1';
-        imageFileName = `https://${bucketName}.s3.${region}.amazonaws.com/posts/${filename}`;
+      } else if (!imageFileName.includes('/posts/')) {
+        imageFileName = getS3Url(filename, 'posts');
         console.log(`Added posts prefix to S3 URL: ${imageFileName}`);
       }
     }
@@ -77,13 +107,28 @@ export async function postImageImport(imageFileName) {
       height = parseInt(sizeMatch[2], 10);
     }
 
+    // For build mode or S3 URLs, return the full URL
+    if (process.env.DISABLE_NOTION_CONNECTIONS === 'true' || isS3Url(imageFileName)) {
+      console.log(`Returning S3/remote URL: ${imageFileName}`);
+      return {
+        default: {
+          src: imageFileName,
+          width,
+          height,
+          format: format.toLowerCase(),
+          isS3: isS3Url(imageFileName),
+          isRemote: true
+        }
+      };
+    }
+
+    // For local development with non-S3 URLs
     return {
       default: {
         src: imageFileName,
         width,
         height,
-        format,
-        isS3: isS3Url(imageFileName),
+        format: format.toLowerCase(),
         isRemote: true
       }
     };

@@ -24,10 +24,13 @@ export default defineConfig({
     svelte()
   ],
   image: {
-    remotePatterns: [{
-      protocol: 'https',
-      hostname: '**.unsplash.com'
-    }]
+    domains: ['greggcoppen.s3.ca-central-1.amazonaws.com'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '**.unsplash.com'
+      }
+    ]
   },
   vite: {
     assetsInclude: ['**/*.bmp'], // Allow importing image types not allowed by default

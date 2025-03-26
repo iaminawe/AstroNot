@@ -90,7 +90,8 @@ export const uploadImageToS3 = async (imageBuffer, filename, contentType = 'imag
       Key: key,
       Body: imageBuffer,
       ContentType: contentType,
-      CacheControl: 'max-age=31536000' // Cache for 1 year
+      CacheControl: 'max-age=31536000', // Cache for 1 year
+      ACL: 'public-read' // Ensure public read access
     });
 
     await s3Client.send(command);

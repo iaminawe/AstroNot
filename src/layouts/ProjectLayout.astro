@@ -29,6 +29,18 @@ if (frontmatter?.cover) {
   try {
     // Check if it's an S3 URL first
     if (isS3Url(frontmatter.cover)) {
+      // For S3 URLs, ensure we're using the correct folder prefix
+      const url = new URL(frontmatter.cover);
+      const pathParts = url.pathname.split('/');
+      const filename = pathParts[pathParts.length - 1];
+      
+      // If it's a project image but in the wrong folder, fix the URL
+      if (filename.startsWith('project-') && !url.pathname.includes('/projects/')) {
+        const correctedPath = url.pathname.replace('/posts/', '/projects/');
+        url.pathname = correctedPath;
+        frontmatter.cover = url.toString();
+      }
+      
       // For S3 URLs, bypass Astro's image optimization
       optimizedDesktopCoverImage = {
         src: frontmatter.cover,
