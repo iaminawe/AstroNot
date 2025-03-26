@@ -129,8 +129,37 @@ jobs:
 
       - name: Trigger Coolify Redeploy
         if: success()
+        env:
+          WEBHOOK_URL: ${{ secrets.COOLIFY_WEBHOOK_URL }}
+          AUTH_TOKEN: ${{ secrets.COOLIFY_AUTH_TOKEN }}
         run: |
-          curl -X POST ${{ secrets.COOLIFY_WEBHOOK_URL }} \
+          echo "Triggering Coolify webhook..."
+          # Mask sensitive parts of the URL for logging
+          masked_url=$(echo "${WEBHOOK_URL}" | sed 's/\(https:\/\/[^/]*\)\(.*\)/\1[MASKED]/')
+          echo "Using webhook URL: ${masked_url}"
+          echo "Request payload: {\"ref\":\"deployment\"}"
+          
+          # Send request and capture full response
+          response=$(curl -i -s -X POST "${WEBHOOK_URL}" \
             -H "Content-Type: application/json" \
-            -H "Authorization: Bearer ${{ secrets.COOLIFY_AUTH_TOKEN }}" \
-            -d '{"ref": "deployment"}'
+            -H "Authorization: ${AUTH_TOKEN}" \
+            -d "{\"ref\":\"deployment\"}")
+          
+          # Print response headers and status code, but mask sensitive info
+          echo "Response headers:"
+          echo "$response" | grep -i "HTTP\|Content-Type\|Content-Length" || true
+          
+          # Print response body if it exists
+          body=$(echo "$response" | sed -n '/^$/,$p' | tail -n +2)
+          if [ ! -z "$body" ]; then
+            echo "Response body:"
+            echo "$body"
+          fi
+          
+          # Check if response contains success indicators
+          if echo "$response" | grep -q "HTTP/1.1 20[0-9]"; then
+            echo "Webhook request successful"
+          else
+            echo "Webhook request failed"
+            exit 1
+          fi

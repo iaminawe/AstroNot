@@ -71,3 +71,29 @@ If images are not being optimized correctly:
    - Always test in a production environment
    - Verify all environment variables are set
    - Check S3 configuration in production
+
+## Coolify Integration Issues
+
+### Webhook Authentication
+If you encounter "Unauthenticated" errors with Coolify webhooks:
+
+1. **Check Secrets**
+   - Verify `COOLIFY_WEBHOOK_URL` is set correctly in GitHub secrets
+   - Ensure `COOLIFY_AUTH_TOKEN` is set and matches Coolify's expected token
+   - Double-check for any whitespace in the token value
+
+2. **Webhook Format**
+   - Webhook URL should be complete (including https://)
+   - Auth token should be the full token from Coolify
+   - Content-Type must be application/json
+
+3. **Common Issues**
+   - "Unauthenticated" usually means token is missing or incorrect
+   - HTTP 404 means webhook URL is incorrect
+   - Empty response might indicate network/firewall issues
+
+4. **Debugging Steps**
+   - Check GitHub Actions logs for masked URL and response headers
+   - Verify webhook response status code
+   - Look for specific error messages in response body
+   - Test webhook URL format and accessibility
