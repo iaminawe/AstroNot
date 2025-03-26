@@ -1,99 +1,41 @@
 ---
-import { Image as AstroImage } from "astro:assets";
-import { postImageImport } from "../helpers/images.mjs";
+import { Image as AstroImage } from 'astro:assets';
+import { convertS3UrlToPath } from '../helpers/url';
 
 interface Props {
   src: string;
-  MAX_WIDTH?: number;
-  imageClass?: string;
-  source?: string;
   alt?: string;
+  width?: number;
+  height?: number;
+  class?: string;
 }
 
-const {
-  src,
-  MAX_WIDTH = 1400,
-  imageClass = "w-full bg-gray-100",
-  source = "internal",
-  alt = "Blog Image",
-} = Astro.props;
+const { src, alt = '', width, height, class: className = '' } = Astro.props;
 
-if (!src) {
-  console.error("Image component received undefined src");
-  return null;
-}
+// Handle different image sources
+const isS3 = src.includes('s3.') && src.includes('amazonaws.com');
+const isExternal = src.startsWith('http') && !isS3;
 
-let imageType = 'posts';
-let imgSrc = src;
-let width = MAX_WIDTH;
-let height = Math.round(MAX_WIDTH * 0.5625);
-let isS3Url = false;
-
-// Check if it's an S3 URL
-isS3Url = typeof src === 'string' && (src.includes('.s3.') || src.includes('s3.amazonaws.com'));
-
-// Determine image type from path or URL
-if (src.includes('/projects/') || src.includes('project-')) {
-  imageType = 'projects';
-} else if (src.includes('/author/') || src.includes('author-')) {
-  imageType = 'author';
-} else if (src.includes('/about/') || src.includes('about-')) {
-  imageType = 'about';
-}
-
-// If it's not an S3 URL and doesn't start with http(s), try to import local image
-if (!isS3Url && !src.startsWith('http')) {
-  try {
-    const { default: importedData } = await postImageImport(src, imageType);
-    if (importedData?.src) {
-      imgSrc = importedData.src;
-      width = importedData.width;
-      height = importedData.height;
-    } else {
-      // If local import fails, construct S3 URL
-      const filename = src.split('/').pop();
-      // Extract the hash from the filename if it exists
-      const hashMatch = filename.match(/[a-f0-9]{64}/);
-      const hash = hashMatch ? hashMatch[0] : filename.replace(/\.[^/.]+$/, '');
-      const ext = filename.split('.').pop();
-      // For GIFs, don't append the imageType prefix to preserve the original filename
-      if (ext === 'gif') {
-        imgSrc = `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.S3_REGION || 'ca-central-1'}.amazonaws.com/${imageType}/${hash}.${ext}`;
-      } else {
-        imgSrc = `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.S3_REGION || 'ca-central-1'}.amazonaws.com/${imageType}/${imageType}-${hash}.${ext}`;
-      }
-      isS3Url = true;
-    }
-  } catch (error) {
-    console.error(`Error importing local image ${src}:`, error);
-    // If local import fails, construct S3 URL
-    const filename = src.split('/').pop();
-    // Extract the hash from the filename if it exists
-    const hashMatch = filename.match(/[a-f0-9]{64}/);
-    const hash = hashMatch ? hashMatch[0] : filename.replace(/\.[^/.]+$/, '');
-    const ext = filename.split('.').pop();
-    // For GIFs, don't append the imageType prefix to preserve the original filename
-    if (ext === 'gif') {
-      imgSrc = `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.S3_REGION || 'ca-central-1'}.amazonaws.com/${imageType}/${hash}.${ext}`;
-    } else {
-      imgSrc = `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.S3_REGION || 'ca-central-1'}.amazonaws.com/${imageType}/${imageType}-${hash}.${ext}`;
-    }
-    isS3Url = true;
-  }
-}
+// For S3 URLs, keep the original URL
+const imageUrl = isS3 ? src : (
+  isExternal ? src : convertS3UrlToPath(src)
+);
 ---
 
-{
-  isS3Url ? (
-    <img src={imgSrc} alt={alt} class={imageClass} style="will-change: opacity;" />
-  ) : (
-    <AstroImage
-      src={imgSrc}
-      alt={alt}
-      class={imageClass}
-      width={width < MAX_WIDTH ? width : MAX_WIDTH}
-      height={height}
-      style="will-change: opacity;"
-    />
-  )
-}
+{isS3 || isExternal ? (
+  <img 
+    src={imageUrl}
+    alt={alt}
+    width={width}
+    height={height}
+    class={className}
+  />
+) : (
+  <AstroImage
+    src={imageUrl}
+    alt={alt}
+    width={width || 800}
+    height={height || 600}
+    class={className}
+  />
+)}

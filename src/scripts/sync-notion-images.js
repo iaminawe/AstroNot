@@ -461,8 +461,16 @@ async function processMdxFile(filePath) {
 
     // Process Notion URLs
     for (const url of urls) {
+      // Skip non-image URLs (like giphy)
+      if (url.includes('giphy.com')) {
+        console.log('Skipping giphy URL:', url);
+        continue;
+      }
+      
       const newUrl = await processImageUrl(url, isProjectFile ? 'projects' : 'posts');
-      updatedContent = updatedContent.replace(new RegExp(url.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), newUrl);
+      if (newUrl) {
+        updatedContent = updatedContent.replace(new RegExp(url.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), newUrl);
+      }
     }
 
     // Process local paths

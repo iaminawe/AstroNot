@@ -18,10 +18,17 @@
 
   let activeUrl: string = "";
   let innerWidth: number;
+  let baseUrl = import.meta.env.BASE_URL || '/';
 
   const name = "Gregg Coppen"; // TODO: Make this a param, site config
 
   $: isHamburgerMenu = innerWidth < HAMBURGER_BREAKPOINT;
+
+  // Ensure links are properly prefixed with base URL
+  const getUrl = (path: string) => {
+    // Remove any double slashes that might occur when joining paths
+    return `${baseUrl}${path}`.replace(/\/+/g, '/');
+  };
 
   const handleClickOutside = throttle((event) => {
     // Since Flowbite-Svelte doesn't export any way to control the nav menu, we have to do it ourselves via DOM
@@ -69,9 +76,9 @@
       transluscent ? "dark:bg-primary-50 dark:bg-opacity-20" : ""
     }`}
   >
-    <NavBrand href="/">
+    <NavBrand href={getUrl('/')}>
       <img
-        src="/images/astronot-logo.webp"
+        src={getUrl('/images/astronot-logo.webp')}
         width="40"
         height="40"
         class="mr-3 aspect-square h-8 w-8 rounded-full sm:h-10 sm:w-10"
@@ -90,11 +97,11 @@
           activeClass="text-white bg-primary-200 md:bg-transparent text-[14px] font-bold hover:scale-105"
           nonActiveClass="md:text-secondary-200 text-[14px] hover:scale-105"
         >
-          <NavLi href="/">Home</NavLi>
-          <NavLi href="/about">About</NavLi>
-          <NavLi href="/projects">Projects</NavLi>
-          <NavLi href="/blog">Blog</NavLi>
-          <NavLi href="/contact">Contact</NavLi>
+          <NavLi href={getUrl('/')}>Home</NavLi>
+          <NavLi href={getUrl('/about')}>About</NavLi>
+          <NavLi href={getUrl('/projects')}>Projects</NavLi>
+          <NavLi href={getUrl('/blog')}>Blog</NavLi>
+          <NavLi href={getUrl('/contact')}>Contact</NavLi>
 
         </NavUl>
         <DarkMode btnClass="ml-4 text-white" size="lg" />
@@ -109,11 +116,11 @@
         activeClass="text-white bg-primary-200 md:bg-transparent text-[14px] font-bold hover:scale-105"
         nonActiveClass="md:text-secondary-200 text-[14px] hover:scale-105"
       >
-        <NavLi href="/">Home</NavLi>
-        <NavLi href="/about">About</NavLi>
-        <NavLi href="/projects">Projects</NavLi>
-        <NavLi class="cursor-pointer" href="/blog">Blog</NavLi>
-        <NavLi href="/contact">Contact</NavLi>
+        <NavLi href={getUrl('/')}>Home</NavLi>
+        <NavLi href={getUrl('/about')}>About</NavLi>
+        <NavLi href={getUrl('/projects')}>Projects</NavLi>
+        <NavLi class="cursor-pointer" href={getUrl('/blog')}>Blog</NavLi>
+        <NavLi href={getUrl('/contact')}>Contact</NavLi>
       </NavUl>
     {/if}
   </Navbar>

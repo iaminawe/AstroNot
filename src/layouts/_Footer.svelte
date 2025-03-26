@@ -1,4 +1,11 @@
-<script>
+<script lang="ts">
+  let baseUrl = import.meta.env.BASE_URL || '/';
+
+  // Ensure links are properly prefixed with base URL
+  const getUrl = (path: string) => {
+    // Remove any double slashes that might occur when joining paths
+    return `${baseUrl}${path}`.replace(/\/+/g, '/');
+  };
   import {
     Footer,
     FooterCopyright,
@@ -24,7 +31,7 @@
       >
         <div class="flex items-center justify-center">
           <img
-            src="/images/astronot-logo.webp"
+            src={getUrl('/images/astronot-logo.webp')}
             class="mr-3 h-8 w-8 rounded-full sm:h-10 sm:w-10"
             width="40"
             height="40"
@@ -32,7 +39,7 @@
           />
           <a
             class="flex-none text-xl font-semibold text-gray-100"
-            href="/"
+            href={getUrl('/')}
             aria-label="Brand">Gregg Coppen</a
           >
         </div>
@@ -42,10 +49,10 @@
           <FooterLinkGroup
             ulClass="flex flex-row justify-center items-center my-2 text-secondary-200 font-semibold"
           >
-            <FooterLink href="/">Home</FooterLink>
-            <FooterLink href="/blog">Blog</FooterLink>
-            <FooterLink href="/about">About</FooterLink>
-            <FooterLink href="/contact">Contact</FooterLink>
+            <FooterLink href={getUrl('/')}>Home</FooterLink>
+            <FooterLink href={getUrl('/blog')}>Blog</FooterLink>
+            <FooterLink href={getUrl('/about')}>About</FooterLink>
+            <FooterLink href={getUrl('/contact')}>Contact</FooterLink>
           </FooterLinkGroup>
           <!-- <FooterCopyright
             href="https://opensource.org/license/mit/"

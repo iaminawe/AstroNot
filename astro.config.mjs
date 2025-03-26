@@ -6,6 +6,7 @@ import svelte from "@astrojs/svelte";
 import { svelteInspector } from '@sveltejs/vite-plugin-svelte-inspector';
 
 export default defineConfig({
+  base: '/',
   srcDir: './src',
   integrations: [
     react(), 
