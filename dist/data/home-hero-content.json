@@ -1,0 +1,21 @@
+{
+  "id": "1b28b10a-276e-80b5-8249-f494585ac8da",
+  "title": "Hi, I am Gregg Coppen",
+  "subtitle": "AI Consulting for Purpose-Driven Organizations in British Columbia",
+  "description": "Practical, privacy-first, and open-source. \nI help nonprofits, educators, and consultants build sustainable AI systems they can trust and control.\nI offer AI strategy, education, and implementation services for teams that want to build smart, sustainable systems—without the high cost or risk of vendor lock-in. Whether you’re automating internal processes, planning new services, or building client-facing tools, I work with you to find the right mix of open-source technologies that align with your mission and resources.",
+  "ctaButton": {
+    "text": "Book a Call",
+    "url": "https://tidycal.com/growagent/30-minute-meeting",
+    "target": "_blank"
+  },
+  "secondaryCtaButton": {
+    "text": "Find out More",
+    "url": "#services",
+    "target": "_blank"
+  },
+  "profileImage": {
+    "src": "/images/portrait.webp",
+    "alt": "Gregg Coppen"
+  },
+  "content": "\n<div class=\"notion-columns\"><div class=\"notion-column\">\n<h3><b>Nonprofits</b></h3>\n\n\n<p>AI solutions for mission-driven teams looking to automate operations and amplify impact.</p>\n\n<ul><li>AI opportunity mapping (internal workflows, donor engagement, etc.)</li>\n<li>Setup of cost-effective, privacy-first automation tools</li>\n<li>Team training & ethical AI guidance</li>\n\n</ul><p>Ideal for nonprofits with small teams and big goals</p>\n\n</div><div class=\"notion-column\">\n<h3><b>Educational Institutions</b></h3>\n\n\n<p>Augmented intelligence for educators and operations teams.</p>\n\n<ol><li>Classroom and remote learning support using AI</li>\n<li>Automation of back-office and administrative tasks</li>\n<li> Self-hosted solutions that protect data and student privacy</li>\n\n</ol><p>For forward-thinking schools and learning centers</p>\n\n</div><div class=\"notion-column\">\n<h3><b>Consultants & Agencies</b></h3>\n\n\n<p>Build and own the systems your clients need - with zero vendor dependence.</p>\n\n<ul><li>Planning & design of AI-powered agent workflows</li>\n<li>Integration of open-source LLMs and self-hosted tools</li>\n<li>Extend your service offerings with AI systems you fully control</li>\n\n</ul><p>For digital consultants, boutique agencies, and freelancers</p>\n\n</div></div>\n\n"
+}

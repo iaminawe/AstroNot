@@ -1,0 +1,1 @@
+const a="Gregg Coppen",c="Human in the Loop",o="https://greggcoppen.s3.ca-central-1.amazonaws.com/author/author-046da11fd7c498284d7753387b9a1a705bec72e75cf8bdc0f951f1c294bdcce3.jpg",t={name:a,bio:c,avatar:o};export{o as avatar,c as bio,t as default,a as name};
