@@ -413,6 +413,15 @@ AstroNot uses a static-first approach for optimal performance:
   ![](/public/images/lighthouse-desktop.png?raw=true)
   ![](/public/images/lighthouse-mobile.png?raw=true)
 
+## 🔍 Troubleshooting
+
+For common issues and solutions, please refer to the [TROUBLESHOOTING.md](memory-bank/TROUBLESHOOTING.md) guide. This includes:
+
+- Navigation and URL handling issues
+- Image loading and optimization problems
+- Development and deployment tips
+- Browser caching solutions
+
 ## 🏗️ Project Structure
 
 ```text
