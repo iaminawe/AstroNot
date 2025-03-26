@@ -254,7 +254,19 @@ You can also deploy using Coolify's webhook system:
    - AWS S3 configuration
    - Any other required environment variables
 
-Coolify will automatically deploy when you push to main branch.
+4. **GitHub Actions Integration**:
+   - Add the following secrets to your GitHub repository:
+     ```
+     COOLIFY_WEBHOOK_URL=your_coolify_webhook_url
+     COOLIFY_AUTH_TOKEN=your_coolify_auth_token
+     ```
+   - The GitHub Actions workflow will automatically trigger a Coolify redeploy after successful deployment
+   - Uses authentication to ensure secure communication with Coolify
+   - This ensures your Coolify deployment stays in sync with your GitHub deployment branch
+
+Coolify will automatically deploy when:
+- You push to main branch (via webhook)
+- GitHub Actions successfully deploys to the deployment branch (via workflow)
 
 ## 🔄 Notion Sync System
 

@@ -126,3 +126,11 @@ jobs:
           git push origin --delete deployment || true
           git branch -m deployment
           git push origin deployment --force
+
+      - name: Trigger Coolify Redeploy
+        if: success()
+        run: |
+          curl -X POST ${{ secrets.COOLIFY_WEBHOOK_URL }} \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.COOLIFY_AUTH_TOKEN }}" \
+            -d '{"ref": "deployment"}'
