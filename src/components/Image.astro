@@ -2,16 +2,37 @@
 import { Image as AstroImage } from "astro:assets";
 import { postImageImport } from "../helpers/images.mjs";
 
+interface Props {
+  src: string;
+  MAX_WIDTH?: number;
+  imageClass?: string;
+  source?: string;
+  alt?: string;
+}
+
 const {
   src,
-  MAX_WIDTH = 1400, // 2x max width of blog section width (2x for retina devices). Max width on Medium is 680px, so target that as max width for articles.
+  MAX_WIDTH = 1400,
   imageClass = "w-full bg-gray-100",
-  source = "internal", // Switch between internal relative URLs and external link sources
+  source = "internal",
   alt = "Blog Image",
 } = Astro.props;
 
-// Determine image type from path or URL
+if (!src) {
+  console.error("Image component received undefined src");
+  return null;
+}
+
 let imageType = 'posts';
+let imgSrc = src;
+let width = MAX_WIDTH;
+let height = Math.round(MAX_WIDTH * 0.5625);
+let isS3Url = false;
+
+// Check if it's an S3 URL
+isS3Url = typeof src === 'string' && (src.includes('.s3.') || src.includes('s3.amazonaws.com'));
+
+// Determine image type from path or URL
 if (src.includes('/projects/') || src.includes('project-')) {
   imageType = 'projects';
 } else if (src.includes('/author/') || src.includes('author-')) {
@@ -20,19 +41,45 @@ if (src.includes('/projects/') || src.includes('project-')) {
   imageType = 'about';
 }
 
-// Check if it's an S3 URL
-const isS3Url = typeof src === 'string' && (src.includes('.s3.') || src.includes('s3.amazonaws.com'));
-
-let imgSrc = src;
-let width = MAX_WIDTH;
-let height = Math.round(MAX_WIDTH * 0.5625); // 16:9 aspect ratio
-
-if (!isS3Url) {
-  // For local images, use postImageImport with the correct type
-  const { default: importedData } = await postImageImport(src, imageType);
-  imgSrc = importedData.src;
-  width = importedData.width;
-  height = importedData.height;
+// If it's not an S3 URL and doesn't start with http(s), try to import local image
+if (!isS3Url && !src.startsWith('http')) {
+  try {
+    const { default: importedData } = await postImageImport(src, imageType);
+    if (importedData?.src) {
+      imgSrc = importedData.src;
+      width = importedData.width;
+      height = importedData.height;
+    } else {
+      // If local import fails, construct S3 URL
+      const filename = src.split('/').pop();
+      // Extract the hash from the filename if it exists
+      const hashMatch = filename.match(/[a-f0-9]{64}/);
+      const hash = hashMatch ? hashMatch[0] : filename.replace(/\.[^/.]+$/, '');
+      const ext = filename.split('.').pop();
+      // For GIFs, don't append the imageType prefix to preserve the original filename
+      if (ext === 'gif') {
+        imgSrc = `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.S3_REGION || 'ca-central-1'}.amazonaws.com/${imageType}/${hash}.${ext}`;
+      } else {
+        imgSrc = `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.S3_REGION || 'ca-central-1'}.amazonaws.com/${imageType}/${imageType}-${hash}.${ext}`;
+      }
+      isS3Url = true;
+    }
+  } catch (error) {
+    console.error(`Error importing local image ${src}:`, error);
+    // If local import fails, construct S3 URL
+    const filename = src.split('/').pop();
+    // Extract the hash from the filename if it exists
+    const hashMatch = filename.match(/[a-f0-9]{64}/);
+    const hash = hashMatch ? hashMatch[0] : filename.replace(/\.[^/.]+$/, '');
+    const ext = filename.split('.').pop();
+    // For GIFs, don't append the imageType prefix to preserve the original filename
+    if (ext === 'gif') {
+      imgSrc = `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.S3_REGION || 'ca-central-1'}.amazonaws.com/${imageType}/${hash}.${ext}`;
+    } else {
+      imgSrc = `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.S3_REGION || 'ca-central-1'}.amazonaws.com/${imageType}/${imageType}-${hash}.${ext}`;
+    }
+    isS3Url = true;
+  }
 }
 ---
 
@@ -42,7 +89,7 @@ if (!isS3Url) {
   ) : (
     <AstroImage
       src={imgSrc}
-      {alt}
+      alt={alt}
       class={imageClass}
       width={width < MAX_WIDTH ? width : MAX_WIDTH}
       height={height}

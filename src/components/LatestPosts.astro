@@ -1,13 +1,40 @@
 ---
 import { Image, getImage } from "astro:assets";
 import { postImageImport } from "../helpers/images.mjs";
+import type { ImageMetadata } from "astro";
+
+interface Frontmatter {
+  title?: string;
+  cover?: string;
+  slug?: string;
+  id?: string;
+  reading_time?: string;
+  description?: string;
+  publish_date?: string;
+}
+
+interface Post {
+  frontmatter: Frontmatter;
+}
+
+interface ImageData {
+  default: {
+    src: string;
+    width: number;
+    height: number;
+    format: string;
+    isS3?: boolean;
+    isRemote?: boolean;
+  };
+}
 
 // Get all posts and handle missing publish_date
-const allPosts = await Astro.glob("../pages/posts/*.mdx");
+const posts = await import.meta.glob<Post>("../pages/posts/*.mdx", { eager: true });
+const allPosts = Object.values(posts);
 
 // Filter and sort posts safely
 const latestPosts = allPosts
-  .filter(post => post.frontmatter && typeof post.frontmatter === 'object')
+  .filter((post): post is Post => post.frontmatter && typeof post.frontmatter === 'object')
   .sort((a, b) => {
     // Use a default date if publish_date is missing
     const dateA = a.frontmatter.publish_date ? new Date(a.frontmatter.publish_date).getTime() : 0;
@@ -15,6 +42,11 @@ const latestPosts = allPosts
     return dateB - dateA;
   })
   .slice(0, 4);
+
+interface Props {
+  fullWidth?: boolean;
+  animated?: boolean;
+}
 
 const { fullWidth = true, animated = false } = Astro.props;
 ---
@@ -51,28 +83,36 @@ const { fullWidth = true, animated = false } = Astro.props;
             try {
               const imageFilePath = (await postImageImport(cover)).default;
               
-              coverImageSrc = (
-                await getImage({
-                  src: imageFilePath,
-                  width: 452,
-                })
-              ).src;
+              // If it's a remote image (S3 or external), use the URL directly
+              if (imageFilePath.isS3 || imageFilePath.isRemote) {
+                coverImageSrc = imageFilePath.src;
+                preloadCoverImageSrc = imageFilePath.src;
+                preloadCoverImageMobileSrc = imageFilePath.src;
+              } else {
+                // For local images, use getImage
+                coverImageSrc = (
+                  await getImage({
+                    src: imageFilePath as ImageMetadata,
+                    width: 452,
+                  })
+                ).src;
 
-              preloadCoverImageSrc = (
-                await getImage({
-                  src: imageFilePath,
-                  width: 1920,
-                  height: 1080,
-                })
-              ).src;
+                preloadCoverImageSrc = (
+                  await getImage({
+                    src: imageFilePath as ImageMetadata,
+                    width: 1920,
+                    height: 1080,
+                  })
+                ).src;
 
-              preloadCoverImageMobileSrc = (
-                await getImage({
-                  src: imageFilePath,
-                  width: 720,
-                  height: 480,
-                })
-              ).src;
+                preloadCoverImageMobileSrc = (
+                  await getImage({
+                    src: imageFilePath as ImageMetadata,
+                    width: 720,
+                    height: 480,
+                  })
+                ).src;
+              }
             } catch (error) {
               console.error(`Error processing image for ${title}:`, error);
             }

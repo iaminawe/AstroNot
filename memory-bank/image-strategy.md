@@ -35,6 +35,10 @@
 - Prefix based on type (notion- or project-)
 - Optional -cover suffix for cover images
 - Extension preserved from source
+- Special handling for GIFs:
+  - Uses hash without prefix to preserve animation
+  - Maintains original extension
+  - Direct S3 URL usage in components
 
 ## Synchronization Process
 
@@ -99,6 +103,24 @@
 - S3_PROJECTS_PREFIX (defaults to 'projects')
 - S3_IMAGE_PREFIX (for backward compatibility)
 
+## Component Integration
+
+### Image Handling in Components
+- Uses import.meta.glob instead of deprecated Astro.glob
+- Conditional handling for remote vs local images:
+  - Remote (S3/external): Direct URL usage
+  - Local: Astro Image optimization
+- Proper TypeScript support:
+  - ImageMetadata type casting
+  - Frontmatter interfaces
+  - Error handling for image processing
+
+### Affected Components
+- LatestPosts.astro
+- CaseStudiesCarouselWrapper.astro
+- projects.astro
+- Image.astro
+
 ## Usage
 
 ### Standard Sync
@@ -115,3 +137,38 @@ npm run sync:images:local
 ```bash
 npm run sync:images:s3 --s3
 ```
+
+## Recent Updates
+
+### GIF Support (March 2025)
+- Added preservation of GIF animations
+- Skip optimization for GIF files
+- Direct S3 URL usage in components
+- Content-type based handling
+
+### Component Modernization (March 2025)
+- Updated to import.meta.glob from Astro.glob
+- Improved TypeScript support
+- Better error handling
+- Conditional image processing
+
+### Notion Integration (March 2025)
+- Updated astronot.js to use processImageUrl for all images
+- Proper handling of cover images in posts
+- Correct S3 prefix usage (posts/, projects/, etc.)
+- Improved error handling and fallbacks
+- Fixed author avatar handling
+
+### Image Processing Improvements (March 2025)
+- Better detection of S3 URLs
+- Skip reprocessing of already optimized images
+- Proper content type handling for all image types
+- Improved error recovery with fallback to original URLs
+- Added logging for better debugging
+
+### S3 Integration (March 2025)
+- Proper prefix handling for different image types
+- Improved URL generation for S3 assets
+- Better handling of existing S3 images
+- Added checks for correct bucket locations
+- Improved error handling for S3 operations

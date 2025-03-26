@@ -214,9 +214,9 @@ export async function processImageUrl(url, type = 'posts') {
       return null;
     }
 
-    const filename = generateImageFilename(imageBuffer, { type });
-    const extension = mime.extension(getContentTypeFromUrl(url)) || 'jpg';
-    const s3Key = `${type}/${filename}.${extension}`;
+    const contentType = getContentTypeFromUrl(url);
+    const filename = generateImageFilename(imageBuffer, { type, contentType });
+    const s3Key = `${type}/${filename}`;
     console.log(`Generated S3 key: ${s3Key}`);
 
     // Check if the image already exists in the manifest

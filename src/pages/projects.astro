@@ -1,15 +1,29 @@
 ---
 import { getImage } from "astro:assets";
+import type { ImageMetadata } from "astro";
 import Layout from "../layouts/Layout.astro";
 import { postImageImport } from "../helpers/images.mjs";
 import Tags from "../components/Tags.astro";
 import { author as authorData } from "../data/index.js";
 
+interface Frontmatter {
+  title: string;
+  cover?: string;
+  slug: string;
+  description?: string;
+  tags?: Array<{ name: string; color: string }>;
+}
+
+interface Project {
+  frontmatter: Frontmatter;
+}
+
 const PROJECTS_PATH = "projects";
 const COVER_IMG_ASPECT_RATIO = "13/9"; // TODO: Expose as variable
 
 // Get all projects from static markdown files
-const projects = await Astro.glob("./projects/*.mdx");
+const projectFiles = await import.meta.glob<Project>("./projects/*.mdx", { eager: true });
+const projects = Object.values(projectFiles);
 ---
 
 <Layout title="Projects">
@@ -44,30 +58,37 @@ const projects = await Astro.glob("./projects/*.mdx");
 
             if (frontmatter.cover) {
               try {
-                const importedImage = await postImageImport(frontmatter.cover) as { default: any } | null;
-                if (importedImage?.default) {
-                  const imageFilePath = importedImage.default;
-
-                  const optimizedImage = await getImage({
-                    src: imageFilePath,
-                    width: 1400,
-                  });
-
-                  coverImageSrc = optimizedImage.src;
-
-                  preloadCoverImageSrc = (await getImage({
-                    src: imageFilePath,
-                    width: 1920,
-                    height: 1080,
-                  })).src;
-
-                  preloadCoverImageMobileSrc = (await getImage({
-                    src: imageFilePath,
-                    width: 720,
-                    height: 480,
-                  })).src;
+                const imageFilePath = (await postImageImport(frontmatter.cover)).default;
+                
+                // If it's a remote image (S3 or external), use the URL directly
+                if (imageFilePath.isS3 || imageFilePath.isRemote) {
+                  coverImageSrc = imageFilePath.src;
+                  preloadCoverImageSrc = imageFilePath.src;
+                  preloadCoverImageMobileSrc = imageFilePath.src;
                 } else {
-                  console.warn(`Failed to import cover image for project: ${frontmatter.slug}`);
+                  // For local images, use getImage
+                  coverImageSrc = (
+                    await getImage({
+                      src: imageFilePath as ImageMetadata,
+                      width: 1400,
+                    })
+                  ).src;
+
+                  preloadCoverImageSrc = (
+                    await getImage({
+                      src: imageFilePath as ImageMetadata,
+                      width: 1920,
+                      height: 1080,
+                    })
+                  ).src;
+
+                  preloadCoverImageMobileSrc = (
+                    await getImage({
+                      src: imageFilePath as ImageMetadata,
+                      width: 720,
+                      height: 480,
+                    })
+                  ).src;
                 }
               } catch (error) {
                 console.error(`Error processing image for ${frontmatter.title}:`, error);

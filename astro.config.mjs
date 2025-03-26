@@ -37,11 +37,11 @@ export default defineConfig({
     assetsInclude: ['**/*.bmp'], // Allow importing image types not allowed by default
     plugins: [
       svelteInspector()
-    ]
-  },
-  resolve: {
-    alias: [
-      { find: '@components', replacement: './src/components' }
-    ]
+    ],
+    resolve: {
+      alias: {
+        '@components': '/src/components'
+      }
+    }
   }
 });

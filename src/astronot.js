@@ -5,7 +5,6 @@ import readingTime from 'reading-time';
 import { config } from 'dotenv';
 import { parseArgs } from 'node:util';
 import { sanitizeUrl, sanitizeImageString } from './helpers/sanitize.mjs';
-import { hashString, downloadImage } from './helpers/images.mjs';
 import { delay } from './helpers/delay.mjs';
 import { needsSync, updateTimestamp, getCollectionLastSync, updateCollectionTimestamp } from './scripts/notion-timestamp-tracker.js';
 
@@ -97,11 +96,29 @@ n2m.setCustomTransformer("embed", async (block) => {
 n2m.setCustomTransformer("image", async (block) => {
   const { image, id } = block;
   const imageUrl = image?.file?.url || image?.external?.url;
-  const imageFileName = sanitizeImageString(imageUrl.split('/').pop());
-  const filePath = await downloadImage(imageUrl, `./images/${imageFileName}`);
-  const fileName = filePath.split('/').pop();
-
-  return `<Image src="/images/posts/${fileName}" />`;
+  
+  if (!imageUrl) return "";
+  
+  try {
+    // Import the image sync function
+    const { processImageUrl } = await import('./scripts/sync-notion-images.js');
+    
+    // Process the image and get its S3 URL
+    const s3Url = await processImageUrl(imageUrl, 'posts');
+    
+    // Return image tag with proper component import
+    return {
+      type: 'image',
+      parent: `<Image src="${s3Url}" alt="" />`,
+    };
+  } catch (error) {
+    console.error(`Error processing image ${imageUrl}:`, error);
+    // Fallback to original URL if processing fails
+    return {
+      type: 'image',
+      parent: `<Image src="${imageUrl}" alt="" />`,
+    };
+  }
 });
 
 n2m.setCustomTransformer("video", async (block) => {
@@ -259,9 +276,18 @@ for (let page of pages) {
 
   const estimatedReadingTime = readingTime(mdString || '').text;
 
-  // Download Cover Image
-  const coverFileName = page.cover ? await downloadImage(page.cover, { isCover: true }) : '';
-  if (coverFileName) console.info("Cover image downloaded:", coverFileName)
+  // Process Cover Image
+  let coverUrl = '';
+  if (page.cover) {
+    try {
+      const { processImageUrl } = await import('./scripts/sync-notion-images.js');
+      coverUrl = await processImageUrl(page.cover, 'posts');
+      console.info("Cover image processed:", coverUrl);
+    } catch (error) {
+      console.error(`Error processing cover image for ${page.title}:`, error);
+      coverUrl = page.cover; // Fallback to original URL
+    }
+  }
 
   // Check if the markdown contains a bookmark
   const hasBookmark = mdString.includes('<BookmarkCard');
@@ -272,7 +298,7 @@ layout: "../../layouts/PostLayout.astro"
 id: "${page.id}"
 slug: "${page.slug}"
 title: "${page.title}"
-cover: "${coverFileName}"
+cover: "${coverUrl}"
 tags: ${JSON.stringify(page.tags)}
 created_time: ${page.created_time}
 last_edited_time: ${page.last_edited_time}

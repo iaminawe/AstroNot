@@ -2,9 +2,22 @@
 import { Image, getImage } from "astro:assets";
 import { postImageImport } from "../helpers/images.mjs";
 import CaseStudiesCarousel from "./CaseStudiesCarousel.svelte";
+import type { ImageMetadata } from "astro";
+
+interface Post {
+  frontmatter: {
+    title?: string;
+    cover?: string;
+    slug?: string;
+    description?: string;
+    publish_date?: string;
+    tags?: Array<{ name: string }>;
+  };
+}
 
 // Get all posts
-const allPosts = await Astro.glob("../pages/posts/*.mdx");
+const posts = await import.meta.glob<Post>("../pages/posts/*.mdx", { eager: true });
+const allPosts = Object.values(posts);
 
 // Filter posts that have the "Article" tag
 const projectPosts = await Promise.all(
@@ -20,9 +33,11 @@ const projectPosts = await Promise.all(
       return hasArticleTag;
     })
     .sort(
-      (a, b) =>
-        new Date(b.frontmatter.publish_date).getTime() -
-        new Date(a.frontmatter.publish_date).getTime()
+      (a, b) => {
+        const dateA = a.frontmatter.publish_date ? new Date(a.frontmatter.publish_date).getTime() : 0;
+        const dateB = b.frontmatter.publish_date ? new Date(b.frontmatter.publish_date).getTime() : 0;
+        return dateB - dateA;
+      }
     )
     .slice(0, 3) // Get top 3 most recent project posts
     .map(async (post) => {
@@ -31,22 +46,33 @@ const projectPosts = await Promise.all(
       // Process the cover image
       let coverImageSrc = "";
       if (cover) {
-        const imageFilePath = (await postImageImport(cover)).default;
-        coverImageSrc = (
-          await getImage({
-            src: imageFilePath,
-            width: 1200,
-            height: 600
-          })
-        ).src;
+        try {
+          const imageFilePath = (await postImageImport(cover)).default;
+          
+          // If it's a remote image (S3 or external), use the URL directly
+          if (imageFilePath.isS3 || imageFilePath.isRemote) {
+            coverImageSrc = imageFilePath.src;
+          } else {
+            // For local images, use getImage
+            coverImageSrc = (
+              await getImage({
+                src: imageFilePath as ImageMetadata,
+                width: 1200,
+                height: 600
+              })
+            ).src;
+          }
+        } catch (error) {
+          console.error(`Error processing image for ${title}:`, error);
+        }
       }
       
       // Return the processed post data
       return {
-        title,
+        title: title || "Untitled Post",
         description: description || "",
         coverImage: coverImageSrc,
-        url: `/posts/${slug}`
+        url: `/posts/${slug || ""}`
       };
     })
 );

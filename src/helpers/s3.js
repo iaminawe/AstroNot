@@ -82,7 +82,7 @@ if (isS3Configured()) {
  * @param {string} extension - The file extension (default: jpg)
  * @returns {string} - The generated filename
  */
-export const generateImageFilename = (imageBuffer, { extension = 'jpg', type = 'posts', isCover = false } = {}) => {
+export const generateImageFilename = (imageBuffer, { extension = 'jpg', type = 'posts', isCover = false, contentType = null } = {}) => {
   const hash = crypto.createHash('sha256').update(imageBuffer).digest('hex');
   let prefix;
   switch (type) {
@@ -98,6 +98,16 @@ export const generateImageFilename = (imageBuffer, { extension = 'jpg', type = '
     default:
       prefix = 'notion';
   }
+  
+  // If contentType is provided, use its extension
+  if (contentType) {
+    const ext = contentType.split('/')[1];
+    if (ext === 'gif') {
+      // For GIFs, just use the hash without prefix
+      return `${hash}${isCover ? '-cover' : ''}.${ext}`;
+    }
+  }
+  
   return `${prefix}-${hash}${isCover ? '-cover' : ''}.${extension}`;
 };
 
